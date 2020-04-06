@@ -1,0 +1,9 @@
+name = "RayTraceGR"
+uuid = "0b6d1932-2de2-430e-9854-0225ca00d782"
+authors = ["Erik Schnetter <schnetter@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
