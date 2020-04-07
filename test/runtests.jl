@@ -3,39 +3,31 @@ using RayTraceGR
 using DifferentialEquations
 using LinearAlgebra
 using StaticArrays
+using Test
 
 const BigRat = Rational{BigInt}
 
-# const T = BigRat
-const T = Float64
+@testset "metric" for T in [BigRat]
+    x = Vec{T}(0, 0, 0, 0)
+    g = metric(x)
 
-x = Vec{T}([0, 0, 0, 0])
-@show x
-g = metric(x)
-@show g
+    detg = det(g)
+    gu = inv(g)
+    detgu = det(gu)
 
-detg = det(g)
-@show detg
-gu = inv(g)
-@show gu
+    @test detg * detgu == 1
+    @test g * gu == I
 
-Γ = christoffel(x)
-@show Γ
+    Γ = christoffel(x)
+end
 
-λ = T(0)
-v = Vec{T}([-1, 1, 0, 0])
-r = Ray{T}(x, v)
-@show r
-rdot = geodesic(r, nothing, λ)
-@show rdot
 
-tspan = (T(0), T(1))
-prob = ODEProblem(geodesic, r2s(r), tspan)
-@show "prob"
-@show prob
-sol = solve(prob, Tsit5(), reltol=1e-8, abstol=1e-8)
-@show "sol"
-@show sol
-@show sol(0)
-@show sol(1)
-@show sol(0.7)
+
+@testset "rays" for T in [Float32]
+    x = Vec{T}(0, 0, 0, 0)
+    n = Vec{T}(0, 1, 0, 0)
+    p = Pixel{T}(x, n, zeros(SVector{3,T}))
+    p = trace_ray(p)
+    @test maximum(abs.(p.rgb - [1, 0, 0])) <= 1.0e-6
+end
+
