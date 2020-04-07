@@ -1,6 +1,5 @@
 using RayTraceGR
 
-using DifferentialEquations
 using LinearAlgebra
 using StaticArrays
 using Test
@@ -27,7 +26,8 @@ end
     x = Vec{T}(0, 0, 0, 0)
     n = Vec{T}(0, 1, 0, 0)
     p = Pixel{T}(x, n, zeros(SVector{3,T}))
-    p = trace_ray(p)
-    @test maximum(abs.(p.rgb - [1, 0, 0])) <= 1.0e-6
+    objs = Object[]
+    p = trace_ray(objs, p)
+    @test maximum(abs.(p.rgb - [10, 0, 0])) <= 1.0e-5
 end
 

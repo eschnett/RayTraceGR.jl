@@ -1,7 +1,6 @@
 module RayTraceGR
 
-using DifferentialEquations
-using ImageIO
+using OrdinaryDiffEq
 using Images
 using StaticArrays
 
@@ -219,16 +218,16 @@ end
 
 export Ray
 """
-State of a ray: position x, velocity v
+State of a ray: position x, velocity u
 """
 struct Ray{T}
     x::Vec{T}
-    v::Vec{T}
+    u::Vec{T}
 end
 
 export r2s, s2r
 function r2s(r::Ray{T})::SVector{2D,T} where {T}
-    SVector{2D,T}(T[r.x; r.v])
+    SVector{2D,T}(T[r.x; r.u])
 end
 function s2r(s::SVector{2D,T})::Ray{T} where {T}
     Ray{T}(s[1:D], s[D+1:2D])
@@ -240,15 +239,45 @@ RHS of geodesic equation for ray p
 """
 function geodesic(r::Ray{T}, par, λ::T)::Ray{T} where {T}
     Γ = christoffel(r.x)
-    xdot = r.v
-    vdot = - Vec{T}(
-        T[sum(Γ[a,x,y] * r.v[x] * r.v[y] for x=1:D, y=1:D)
+    xdot = r.u
+    udot = - Vec{T}(
+        T[sum(Γ[a,x,y] * r.u[x] * r.u[y] for x=1:D, y=1:D)
           for a in 1:D])
-    Ray{T}(xdot, vdot)
+    Ray{T}(xdot, udot)
 end
 
 function geodesic(s::SVector{2D,T}, par, λ::T)::SVector{2D,T} where {T}
     r2s(geodesic(s2r(s), par, λ))
+end
+
+
+
+export Object
+abstract type Object end
+
+"""
+distance between object and point
+
+The distance does not need to be the geodesic distance; any distance
+measure is fine, as long as it is zero on the surface, positive
+outside, and negative inside.
+"""
+function distance(obj::Object, pos::Vec)
+    @error "Called distance on abstract object"
+end
+
+
+
+export Sphere
+struct Sphere{T} <: Object
+    pos::Vec{T}
+    vel::Vec{T}
+    radius::T
+end
+
+function distance(sph::Sphere{T}, pos::Vec{T})::T where{T}
+    # TOOD: use metric
+    sum((pos[2:D] - sph.pos[2:D]).^2) - sph.radius^2
 end
 
 
@@ -261,23 +290,33 @@ struct Pixel{T}
 end
 
 export trace_ray
-function trace_ray(p::Pixel{T})::Pixel{T} where {T}
+function trace_ray(objs::Vector{Object}, p::Pixel{T})::Pixel{T} where {T}
     x = p.pos
     g = metric(x)
     n = p.normal
     # Note: make v null
     # t = [-α, 0]
     # t.g.n == 0
-    # v = t + n
-    # v.g.v == 0
+    # u = t + n
+    # u.g.u == 0
     v = n + Vec{T}(-1, 0, 0, 0)
     λ0 = T(0)
-    λ1 = T(1)
+    λ1 = T(10)
     r = Ray{T}(x, v)
     prob = ODEProblem(geodesic, r2s(r), (λ0, λ1))
+    function condition(s, λ, integrator)
+        isempty(objs) && return T(1)
+        r = s2r(s)::Ray{T}
+        minimum(distance(obj, r.x) for obj in objs)
+    end
+    function affect!(integrator)
+        terminate!(integrator)
+    end
+    cb = ContinuousCallback(condition, affect!)
     tol = eps(T)^(T(3)/4)
-    sol = solve(prob, Tsit5(), reltol=tol, abstol=tol)
-    rgb = s2r(sol(λ1)).x[2:4]
+    sol = solve(prob, Tsit5(), callback=cb, reltol=tol, abstol=tol)
+    λend = sol.t[end]
+    rgb = s2r(sol(λend)).x[2:4]
     Pixel{T}(p.pos, p.normal, rgb)
 end
 
@@ -289,12 +328,13 @@ struct Canvas{T}
 end
 
 export trace_rays
-function trace_rays(c::Canvas{T})::Canvas{T} where {T}
+function trace_rays(objs::Vector{Object}, c::Canvas{T})::Canvas{T} where {T}
     l = length(c.pixels)
-    c =Canvas{T}([
+    # TODO: Use EnsembleProblem for parallelism?
+    c = Canvas{T}([
     begin
         print("\r$(round(Int, 100*i/l))%")
-        trace_ray(p)
+        trace_ray(objs, p)
     end
     for (i,p) in enumerate(c.pixels)])
     println("\r100%")
@@ -305,19 +345,27 @@ end
 
 function main()
     T = Float32
+
+    sph = Sphere{T}(Vec{T}(0, 0, 0, 0), Vec{T}(0, 0, 0, 0), 1)
+    objs = Object[sph]
+
     ni = 100
     nj = 100
     function make_pixel(i, j)
-        x = Vec{T}(0, (i-1/2)/ni, (j-1/2)/nj, 0)
-        n = Vec{T}(0, 0, 0, 1)
+        dx = (i-1/2)/ni-1/2
+        dy = (j-1/2)/nj-1/2
+        x = Vec{T}(0, dx, dy, -2)
+        n = Vec{T}(0, dx, dy, 1)
         Pixel{T}(x, n, zeros(SVector{3,T}))
     end
-    c = Canvas{T}([make_pixel(i,j) for i in 1:ni, j in 1:nj])
-    c = trace_rays(c)
+    canvas = Canvas{T}([make_pixel(i,j) for i in 1:ni, j in 1:nj])
+
+    canvas = trace_rays(objs, canvas)
+
     scene = colorview(RGB,
-                      [p.rgb[1] for p in c.pixels],
-                      [p.rgb[2] for p in c.pixels],
-                      [p.rgb[3] for p in c.pixels])
+                      [mod(p.rgb[1] + 1/2, 1) for p in canvas.pixels],
+                      [mod(p.rgb[2] + 1/2, 1) for p in canvas.pixels],
+                      [mod(p.rgb[3] + 1/2, 1) for p in canvas.pixels])
     # dir = mktempdir()
     dir = "scenes"
     mkpath(dir)
