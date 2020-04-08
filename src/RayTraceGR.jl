@@ -7,11 +7,14 @@ using StaticArrays
 
 
 
-struct Dual{T,DT} <: AbstractFloat
+struct Dual{T,DT} <: Real
     val::T
     eps::DT
 end
 
+function Dual{T,DT}(val::T) where {T,DT}
+    Dual{T,DT}(val, zeros(DT))
+end
 function Dual{T,DT}(val) where {T,DT}
     Dual{T,DT}(val, zeros(DT))
 end
@@ -232,6 +235,7 @@ const Ten3{T} = SArray{Tuple{D,D,D}, T}
 
 
 
+export minkowski
 """
 Minkowski metric g_ab
 """
@@ -243,6 +247,7 @@ end
 
 
 
+export kerr_schild
 """
 Kerr-Schild metric g_ab
 

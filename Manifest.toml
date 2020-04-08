@@ -32,9 +32,9 @@ version = "0.0.4"
 
 [[ArrayInterface]]
 deps = ["LinearAlgebra", "Requires", "SparseArrays"]
-git-tree-sha1 = "94d8001d8609eeb241729bb4eda552059be30297"
+git-tree-sha1 = "c851f4dab787f78ab3389657a0a50c8d3270dd6a"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "2.7.0"
+version = "2.8.1"
 
 [[AxisAlgorithms]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
@@ -170,10 +170,10 @@ deps = ["Mmap"]
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
 [[DiffEqBase]]
-deps = ["ArrayInterface", "ChainRulesCore", "ConsoleProgressMonitor", "DataStructures", "Distributed", "DocStringExtensions", "FunctionWrappers", "IterativeSolvers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "LoggingExtras", "MuladdMacro", "Parameters", "Printf", "ProgressLogging", "RecipesBase", "RecursiveArrayTools", "RecursiveFactorization", "Requires", "Roots", "SparseArrays", "StaticArrays", "Statistics", "SuiteSparse", "TableTraits", "TerminalLoggers", "TreeViews", "ZygoteRules"]
-git-tree-sha1 = "420c6f8c67632e8f52fdfc9c56e2b80ef2ed9f0b"
+deps = ["ArrayInterface", "ChainRulesCore", "ConsoleProgressMonitor", "DataStructures", "Distributed", "DocStringExtensions", "FunctionWrappers", "IterativeSolvers", "IteratorInterfaceExtensions", "LabelledArrays", "LinearAlgebra", "Logging", "LoggingExtras", "MuladdMacro", "Parameters", "Printf", "ProgressLogging", "RecipesBase", "RecursiveArrayTools", "RecursiveFactorization", "Requires", "Roots", "SparseArrays", "StaticArrays", "Statistics", "SuiteSparse", "TableTraits", "TerminalLoggers", "TreeViews", "ZygoteRules"]
+git-tree-sha1 = "ee7c0e244457d3c3e83c1ebf303a50f6f6df607c"
 uuid = "2b5f629d-d688-5b77-993f-72d75c75574e"
-version = "6.26.0"
+version = "6.27.0"
 
 [[DiffResults]]
 deps = ["StaticArrays"]
@@ -483,6 +483,12 @@ git-tree-sha1 = "71119990371c93f027bee80547ee908ddfe7c5ca"
 uuid = "dd4b983a-f0e5-5f8d-a1b7-129d4a5fb1ac"
 version = "2.10.0+1"
 
+[[LabelledArrays]]
+deps = ["LinearAlgebra", "MacroTools", "StaticArrays"]
+git-tree-sha1 = "559e1bd9a0b072ce3a946e5c3ae08789235c5c4b"
+uuid = "2ee39098-c373-598a-b85f-a56591580800"
+version = "1.1.0"
+
 [[LeftChildRightSiblingTrees]]
 deps = ["AbstractTrees"]
 git-tree-sha1 = "71be1eb5ad19cb4f61fa8c73395c0338fd092ae0"
@@ -669,9 +675,9 @@ version = "0.5.4"
 
 [[Pango_jll]]
 deps = ["Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "Libdl", "Pkg"]
-git-tree-sha1 = "99ee35d5298b2615c800becfea2b3dc4fdb803c5"
+git-tree-sha1 = "cd19789f20bde5d45e96a7e937db9a6a024412e6"
 uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
-version = "1.42.4+7"
+version = "1.42.4+8"
 
 [[Parameters]]
 deps = ["OrderedCollections"]
@@ -736,9 +742,9 @@ version = "1.0.0"
 
 [[RecursiveArrayTools]]
 deps = ["ArrayInterface", "LinearAlgebra", "RecipesBase", "Requires", "StaticArrays", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "8001f10de9886389e347064bcd5c998500fa8287"
+git-tree-sha1 = "48a8ce7a8cb156231de0477372dcaa6ada1472ef"
 uuid = "731186ca-8d62-57ce-b412-fbd966d074cd"
-version = "2.3.0"
+version = "2.3.1"
 
 [[RecursiveFactorization]]
 deps = ["LinearAlgebra"]
@@ -807,9 +813,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SparseDiffTools]]
 deps = ["Adapt", "ArrayInterface", "Compat", "DataStructures", "FiniteDiff", "ForwardDiff", "InteractiveUtils", "LightGraphs", "LinearAlgebra", "Requires", "SparseArrays", "VertexSafeGraphs"]
-git-tree-sha1 = "0ec9d7294a581faa2afa2d48c0eff185456d5e78"
+git-tree-sha1 = "132c55cf302f1faf1d0d1c8205453764066cb018"
 uuid = "47a9eef4-7e08-11e9-0b38-333d64bd3804"
-version = "1.5.0"
+version = "1.6.0"
 
 [[SpecialFunctions]]
 deps = ["OpenSpecFun_jll"]
@@ -1131,9 +1137,9 @@ version = "3.33.92+3"
 
 [[at_spi2_atk_jll]]
 deps = ["ATK_jll", "Libdl", "Pkg", "XML2_jll", "Xorg_libX11_jll", "at_spi2_core_jll"]
-git-tree-sha1 = "c896019bced4ebbf7e507e66fa403ec4409a1937"
+git-tree-sha1 = "b8222202b3ab2b67dc88195673a9201a015e703e"
 uuid = "de012916-1e3f-58c2-8f29-df3ef51d412d"
-version = "2.34.1+0"
+version = "2.34.1+1"
 
 [[at_spi2_core_jll]]
 deps = ["Dbus_jll", "Glib_jll", "Libdl", "Pkg", "Xorg_libXtst_jll"]
