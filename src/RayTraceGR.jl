@@ -2,6 +2,7 @@ module RayTraceGR
 
 using OrdinaryDiffEq
 using Images
+using LinearAlgebra
 using StaticArrays
 
 
@@ -11,7 +12,13 @@ struct Dual{T,DT} <: AbstractFloat
     eps::DT
 end
 
+function Dual{T,DT}(val) where {T,DT}
+    Dual{T,DT}(val, zeros(DT))
+end
+
 Base.promote_rule(::Type{Dual{T,DT}}, ::Type{T}) where {T,DT} = Dual{T,DT}
+Base.promote_rule(::Type{Dual{T,DT}}, ::Type{<:Integer}) where {T,DT} =
+    Dual{T,DT}
 Base.promote_rule(::Type{Dual{T,DT}}, ::Type{Dual{U,DU}}) where {T,DT,U,DU} =
     Dual{promote{T,U}, promote{DT,DU}}
 
@@ -21,19 +28,24 @@ function Base.convert(::Type{Dual{T,DT}}, x::Dual{U,DU}) where {T,DT,U,DU}
     Dual{T,DT}(convert(T, x.val), convert(DT, x.eps))
 end
 function Base.convert(::Type{Dual{T,DT}}, val::Number)::Dual{T,DT} where {T,DT}
-    Dual{T,DT}(convert(T, val), zeros(DT))
+    Dual{T,DT}(convert(T, val))
+end
+
+function Base.eps(::Type{Dual{T,DT}})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(eps(T))
 end
 
 function Base.zero(::Type{Dual{T,DT}})::Dual{T,DT} where {T,DT}
-    Dual{T,DT}(zero(T), zeros(DT))
+    Dual{T,DT}(zero(T))
 end
 function Base.one(::Type{Dual{T,DT}})::Dual{T,DT} where {T,DT}
-    Dual{T,DT}(one(T), zeros(DT))
+    Dual{T,DT}(one(T))
 end
 
 function Base.:+(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(+x.val, +x.eps)
 end
+
 function Base.:-(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(-x.val, -x.eps)
 end
@@ -41,8 +53,33 @@ end
 function Base.:+(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val+y.val, x.eps+y.eps)
 end
+function Base.:+(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(x.val+ a, x.eps)
+end
+function Base.:+(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(a+x.val, x.eps)
+end
+function Base.:+(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(x.val+a, x.eps)
+end
+function Base.:+(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(a+x.val, x.eps)
+end
+
 function Base.:-(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val-y.val, x.eps-y.eps)
+end
+function Base.:-(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(x.val- a, x.eps)
+end
+function Base.:-(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(a-x.val, x.eps)
+end
+function Base.:-(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(x.val-a, x.eps)
+end
+function Base.:-(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(a-x.val, x.eps)
 end
 
 function Base.:*(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
@@ -54,30 +91,60 @@ end
 function Base.:*(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a*x.val, a.*x.eps)
 end
+function Base.:*(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(x.val*a, x.eps.*a)
+end
+function Base.:*(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(a*x.val, a.*x.eps)
+end
+
 # 1/(a+ϵb) = (a-ϵb)/a^2
 function Base.inv(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(inv(x.val), -inv(x.val)^2 .* x.eps)
 end
+
 function Base.:/(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val/y.val, (x.eps * y.val - x.val * y.eps) / y.val^2)
-end
-function Base.:\(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
-    Dual{T,DT}(x.val\y.val, x.val^2 \ (- x.val .* y.eps + x.eps .* y.val))
 end
 function Base.:/(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val/a, x.eps./a)
 end
+function Base.:/(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(x.val/a, x.eps./a)
+end
+
+function Base.:\(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(x.val\y.val, x.val^2 \ (x.eps .* y.val - x.val .* y.eps))
+end
 function Base.:\(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(a\x.val, a.\x.eps)
+end
+function Base.:\(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a\x.val, a.\x.eps)
 end
 
 function Base.:^(x::Dual{T,DT}, n::Integer)::Dual{T,DT} where {T,DT}
     n == 0 && return one(x)
-    Dual{T,DT}(x.val^n, T(n) * x.val^(n-1) .* x.eps)
+    Dual{T,DT}(x.val^n, n * x.val^(n-1) .* x.eps)
+end
+function Base.:^(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(x.val^a, a * x.val^(a-1) .* x.eps)
+end
+function Base.:^(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    r = x.val ^ y.val
+    Dual{T,DT}(r, y.val/x.val * r .* x.eps + r * log(x.val) .* y.eps)
 end
 
 function Base.abs(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(abs(x.val), copysign(one(T), x.val) .* x.eps)
+end
+
+function Base.atan(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(atan(x.val), 1 / (1 + x.val^2) .* x.eps)
+end
+function Base.atan(y::Dual{T,DT}, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    ρ2 = x.val^2 + y.val^2
+    Dual{T,DT}(atan(y.val, x.val), x.val .* y.eps - y.val / ρ2 .* x.eps)
 end
 
 function Base.cbrt(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
@@ -94,6 +161,10 @@ function Base.exp(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(r, r .* x.eps)
 end
 
+function Base.log(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+    Dual{T,DT}(log(x.val), 1 / x.val .* x.eps)
+end
+
 function Base.sin(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(sin(x.val), cos(x.val) .* x.eps)
 end
@@ -101,6 +172,50 @@ end
 function Base.sqrt(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     r = sqrt(x.val)
     Dual{T,DT}(r, r/(2*x.val) .* x.eps)
+end
+
+function Base.:(==)(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
+    x.val == y.val
+end
+function Base.:(==)(x::Dual{T,DT}, a::T)::Bool where {T,DT}
+    x.val == a
+end
+function Base.:(==)(x::Dual{T,DT}, a::Integer)::Bool where {T,DT}
+    x.val == a
+end
+function Base.:(==)(a::T, x::Dual{T,DT})::Bool where {T,DT}
+    a == x.val
+end
+function Base.:(==)(a::Integer, x::Dual{T,DT})::Bool where {T,DT}
+    a == x.val
+end
+
+function Base.:(<)(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
+    x.val < y.val
+end
+function Base.:(<)(x::Dual{T,DT}, a::T)::Bool where {T,DT}
+    x.val < a
+end
+function Base.:(<)(x::Dual{T,DT}, a::Integer)::Bool where {T,DT}
+    x.val < a
+end
+function Base.:(<)(a::T, x::Dual{T,DT})::Bool where {T,DT}
+    a < x.val
+end
+function Base.:(<)(a::Integer, x::Dual{T,DT})::Bool where {T,DT}
+    a < x.val
+end
+
+function Base.hash(x::Dual{T,DT}, h::UInt)::UInt where {T,DT}
+    hash(0xdccda268, hash(x.val, hash(x.eps, h)))
+end
+function Base.isequal(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
+    isequal(x.val, y.val) && isequal(x.eps, y.eps)
+end
+function Base.isless(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
+    isless(x.val, y.val) && return true
+    isless(y.val, x.val) && return false
+    isless(x.eps, y.eps)
 end
 
 
@@ -117,65 +232,81 @@ const Ten3{T} = SArray{Tuple{D,D,D}, T}
 
 
 
+"""
+Minkowski metric g_ab
+"""
 function minkowski(x::Vec{T})::Mat{T} where {T}
     Mat{T}(T[
         a==b ? (a==1 ? -1 : 1) : 0
         for a in 1:D, b in 1:D])
 end
 
-# """
-# Kerr-Schild metric
-# 
-# Living Reviews in Relativity, Greg Cook, 2000, section 3.3.1
-# """
-# function kerr_schild(xx::Vec{T})::Mat{T} where {T}
-#     M = T(1)
-#     a = T(0.8)
-#     Q = T(0)
-# 
-#     t,x,y,z = xx
-# 
-#     R = sqrt(x^2 + y^2 + z^2)
-#     cosθ = z / R
-#     sinθ = sqrt(x^2 + y^2) / R
-# 
-#     r = sqrt((R^2 - a^2)/2 + sqrt(a^2*z^2 + ((R^2 - a^2)/2)^2))
-#     ρ = sqrt(r^2 + a^2 * cosθ^2)
-# 
-#     α = 1 / sqrt(1 + (2M*r - Q^2) / ρ^2)
-#     βr = α^2 * (2M*r - Q^2) / ρ^2
-#     γrr = 1 + (2M*r - Q^2) / ρ^2
-#     γrϕ = - (1 + (2M*r - Q^2) / ρ^2) * a * sinθ^2
-#     γθθ = ρ^2
-#     γϕϕ = (r^2 + a^2 + (2M*r - Q^2) / ρ^2 * a^2 * sinθ^2) * sinθ^2
-# 
-#     βlr = γrr * βr
-# 
-#     βlx = βlr * drdx
-#     βly = βlr * drdy
-#     βlz = βlr * drdz
-# 
-#     γxx = γrr * drdx * drdx
-# 
-#     Mat{T}(T[-α^2+β2 βlr 0 0;
-#              βlr γrr
-#         a==b ? (a==1 ? -1 : 1) : 0
-#         for a in 1:D, b in 1:D])
-# end
-# function kerr_schild(x::Vec{T})::Ten3{T} where {T}
-#     Ten3{T}(T[
-#         0
-#         for a in 1:D, b in 1:D, c in 1:D])
-# end
 
 
-
-export metric
-# TODO: Try SHermitianCompact as metric type
 """
-Four-metric g_ab
+Kerr-Schild metric g_ab
+
+Living Reviews in Relativity, Greg Cook, 2000, section 3.3.1
 """
-const metric = minkowski
+function kerr_schild(xx::Vec{T})::Mat{T} where {T}
+    M = 0                       # 1
+    a = 0                       # T(0.8)
+    Q = 0
+
+    t,x,y,z = xx
+
+    # To avoid coordinate a singularity on the z axis, all ϕ
+    # components are divided by sin θ
+
+    R = sqrt(x^2 + y^2 + z^2)
+    θ = atan(sqrt(x^2 + y^2), z)
+    cosθ = cos(θ)
+    sinθ = sin(θ)
+    ϕ = atan(y, x)
+    cosϕ = cos(ϕ)
+    sinϕ = sin(ϕ)
+
+    r = sqrt((R^2 - a^2)/2 + sqrt(a^2*z^2 + ((R^2 - a^2)/2)^2))
+    ρ = sqrt(r^2 + a^2 * cosθ^2)
+
+    α = 1 / sqrt(1 + (2M*r - Q^2) / ρ^2)
+    βr = α^2 * (2M*r - Q^2) / ρ^2
+    γrr = 1 + (2M*r - Q^2) / ρ^2
+    γrϕ = - (1 + (2M*r - Q^2) / ρ^2) * a * sinθ
+    γθθ = ρ^2
+    γϕϕ = r^2 + a^2 + (2M*r - Q^2) / ρ^2 * a^2 * sinθ^2
+
+    grr = Mat{T}(T[
+        -α^2+βr*γrr*βr   γrr*βr   0     0  ;
+        γrr*βr           γrr      0     γrϕ;
+        0                0        γθθ   0  ;
+        0                γrϕ      0     γϕϕ])
+
+    grr = Mat{T}(T[
+        -1   0   0     0  ;
+        0    1   0     0  ;
+        0    0   R^2   0  ;
+        0    0   0     R^2])
+
+    # t = t
+    # x = R*sinθ*cosϕ
+    # y = R*sinθ*sinϕ
+    # z = R*cosθ
+    dxdR = Mat{T}(T[
+        1   0     0             0      ;
+        0   x/R   R*cosθ*cosϕ   -R*sinϕ;
+        0   y/R   R*cosθ*sinϕ   R*cosϕ ;
+        0   z/R   -R*sinθ       0      ])
+
+    tol = eps(T)^(T(3)/4)
+    @assert abs(det(dxdR)) > tol
+
+    dRdx = inv(dxdR)
+
+    Mat{T}(T[
+        sum(dRdx[a,x] * dRdx[b,y] * grr[x,y] for x in 1:D, y in 1:D)
+        for a in 1:D, b in 1:D])
+end
 
 
 
@@ -184,7 +315,7 @@ export dmetric
 Derivative of four-metric g_ab,c
 """
 # TODO: Use dual numbers to automate this
-function dmetric(x::Vec{T})::Tuple{Mat{T}, Ten3{T}} where {T}
+function dmetric(metric, x::Vec{T})::Tuple{Mat{T}, Ten3{T}} where {T}
     DT = Vec{T}
     TDT = Dual{T,DT}
     xdx = Vec{TDT}(TDT[
@@ -203,8 +334,8 @@ export christoffel
 """
 Christoffel symbol Γ^a_bc
 """
-function christoffel(x::Vec{T})::Ten3{T} where {T}
-    g,dg = dmetric(x)
+function christoffel(metric, x::Vec{T})::Ten3{T} where {T}
+    g,dg = dmetric(metric, x)
     gu = inv(g)
     Γl = Ten3(T[
         (dg[a,b,c] + dg[a,c,b] - dg[b,c,a]) / 2
@@ -237,17 +368,17 @@ export geodesic
 """
 RHS of geodesic equation for ray p
 """
-function geodesic(r::Ray{T}, par, λ::T)::Ray{T} where {T}
-    Γ = christoffel(r.x)
+function geodesic(r::Ray{T}, metric, λ::T)::Ray{T} where {T}
+    Γ = christoffel(metric, r.x)
     xdot = r.u
-    udot = - Vec{T}(
-        T[sum(Γ[a,x,y] * r.u[x] * r.u[y] for x=1:D, y=1:D)
-          for a in 1:D])
+    udot = - Vec{T}(T[
+        sum(Γ[a,x,y] * r.u[x] * r.u[y] for x=1:D, y=1:D)
+        for a in 1:D])
     Ray{T}(xdot, udot)
 end
 
-function geodesic(s::SVector{2D,T}, par, λ::T)::SVector{2D,T} where {T}
-    r2s(geodesic(s2r(s), par, λ))
+function geodesic(s::SVector{2D,T}, metric, λ::T)::SVector{2D,T} where {T}
+    r2s(geodesic( s2r(s), metric, λ))
 end
 
 
@@ -290,20 +421,30 @@ struct Pixel{T}
 end
 
 export trace_ray
-function trace_ray(objs::Vector{Object}, p::Pixel{T})::Pixel{T} where {T}
+function trace_ray(metric, objs::Vector{Object},
+                   p::Pixel{T})::Pixel{T} where {T}
+    # tol = eps(T)^(T(3)/4)
+    tol = eps(T)^(T(1)/2)
+
     x = p.pos
     g = metric(x)
     n = p.normal
-    # Note: make v null
-    # t = [-α, 0]
-    # t.g.n == 0
-    # u = t + n
-    # u.g.u == 0
-    v = n + Vec{T}(-1, 0, 0, 0)
+    @show "trace_ray" x
+
+    t = Vec{T}(-1, 0, 0, 0)
+    nn = n' * g * n
+    tt = t' * g * t
+    nt = n' * g * t
+    α = sqrt((nt/tt)^2 - nn/tt) - nt/tt
+    v = n + α * t
+    vv = v' * g * v
+    @assert abs(vv) <= tol
+
     λ0 = T(0)
     λ1 = T(10)
     r = Ray{T}(x, v)
-    prob = ODEProblem(geodesic, r2s(r), (λ0, λ1))
+    @show "trace_ray" r
+    prob = ODEProblem(geodesic, r2s(r), (λ0, λ1), metric)
     function condition(s, λ, integrator)
         isempty(objs) && return T(1)
         r = s2r(s)::Ray{T}
@@ -313,10 +454,13 @@ function trace_ray(objs::Vector{Object}, p::Pixel{T})::Pixel{T} where {T}
         terminate!(integrator)
     end
     cb = ContinuousCallback(condition, affect!)
-    tol = eps(T)^(T(3)/4)
+    @show "trace_ray.before"
     sol = solve(prob, Tsit5(), callback=cb, reltol=tol, abstol=tol)
+    @show "trace_ray.after"
     λend = sol.t[end]
+    @show "trace_ray" λend
     rgb = s2r(sol(λend)).x[2:4]
+    @show "trace_ray" rgb
     Pixel{T}(p.pos, p.normal, rgb)
 end
 
@@ -328,13 +472,14 @@ struct Canvas{T}
 end
 
 export trace_rays
-function trace_rays(objs::Vector{Object}, c::Canvas{T})::Canvas{T} where {T}
+function trace_rays(metric, objs::Vector{Object},
+                    c::Canvas{T})::Canvas{T} where {T}
     l = length(c.pixels)
     # TODO: Use EnsembleProblem for parallelism?
     c = Canvas{T}([
     begin
         print("\r$(round(Int, 100*i/l))%")
-        trace_ray(objs, p)
+        trace_ray(metric, objs, p)
     end
     for (i,p) in enumerate(c.pixels)])
     println("\r100%")
@@ -343,7 +488,9 @@ end
 
 
 
-function main()
+const outdir = "scenes"
+
+function example1()
     T = Float32
 
     sph = Sphere{T}(Vec{T}(0, 0, 0, 0), Vec{T}(0, 0, 0, 0), 1)
@@ -351,28 +498,66 @@ function main()
 
     ni = 100
     nj = 100
+    pos = Vec{T}(0, 0, 0, -2)
+    widthx = Vec{T}(0, 1, 0, 0)
+    widthy = Vec{T}(0, 0, 1, 0)
+    normal = Vec{T}(0, 0, 0, 1)
     function make_pixel(i, j)
-        dx = (i-1/2)/ni-1/2
-        dy = (j-1/2)/nj-1/2
-        x = Vec{T}(0, dx, dy, -2)
-        n = Vec{T}(0, dx, dy, 1)
+        dx = (i-1/2) / ni - 1/2
+        dy = (j-1/2) / nj - 1/2
+        x = pos + dx * widthx + dy * widthy
+        n = normal + dx * widthx + dy * widthy
         Pixel{T}(x, n, zeros(SVector{3,T}))
     end
     canvas = Canvas{T}([make_pixel(i,j) for i in 1:ni, j in 1:nj])
 
-    canvas = trace_rays(objs, canvas)
+    canvas = trace_rays(minkowski, objs, canvas)
 
     scene = colorview(RGB,
                       [mod(p.rgb[1] + 1/2, 1) for p in canvas.pixels],
                       [mod(p.rgb[2] + 1/2, 1) for p in canvas.pixels],
                       [mod(p.rgb[3] + 1/2, 1) for p in canvas.pixels])
-    # dir = mktempdir()
-    dir = "scenes"
-    mkpath(dir)
-    file = joinpath(dir, "scene.png")
+    mkpath(outdir)
+    file = joinpath(outdir, "sphere.png")
     rm(file, force=true)
     println("Output file is \"$file\"")
     save(file, scene)
+    nothing
+end
+
+function example2()
+    T = Float32
+
+    sph = Sphere{T}(Vec{T}(0, 4, 0, 0), Vec{T}(0, 0, 0, 0), 1)
+    objs = Object[sph]
+
+    ni = 100
+    nj = 100
+    pos = Vec{T}(0, 2, 0, -4)
+    widthx = Vec{T}(0, 1, 0, 0)
+    widthy = Vec{T}(0, 0, 1, 0)
+    normal = Vec{T}(0, 0, 0, 1)
+    function make_pixel(i, j)
+        dx = (i-1/2) / ni - 1/2
+        dy = (j-1/2) / nj - 1/2
+        x = pos + dx * widthx + dy * widthy
+        n = normal + dx * widthx + dy * widthy
+        Pixel{T}(x, n, zeros(SVector{3,T}))
+    end
+    canvas = Canvas{T}([make_pixel(i,j) for i in 1:ni, j in 1:nj])
+
+    canvas = trace_rays(kerr_schild, objs, canvas)
+
+    scene = colorview(RGB,
+                      [mod(p.rgb[1] + 1/2, 1) for p in canvas.pixels],
+                      [mod(p.rgb[2] + 1/2, 1) for p in canvas.pixels],
+                      [mod(p.rgb[3] + 1/2, 1) for p in canvas.pixels])
+    mkpath(outdir)
+    file = joinpath(outdir, "sphere2.png")
+    rm(file, force=true)
+    println("Output file is \"$file\"")
+    save(file, scene)
+    nothing
 end
 
 end
