@@ -312,7 +312,6 @@ Living Reviews in Relativity, Greg Cook, 2000, section 3.3.1
 function kerr_schild(xx::Vec{T})::Mat{T} where {T}
     M = 1
     a = 0                       # T(0.8)
-    Q = 0
 
     t,x,y,z = xx
     @assert !any(isnan, (t, x, y, z))
@@ -587,9 +586,9 @@ function example1()
 
     metric = minkowski
     caelum = Sphere{T}(Vec{T}(0, 0, 0, 0), Vec{T}(1, 0, 0, 0), -10)
-    past = Plane{T}(-20)
+    frustum = Plane{T}(-20)
     sphere = Sphere{T}(Vec{T}(0, 0, 0, 0), Vec{T}(1, 0, 0, 0), T(1)/2)
-    objs = Object{T}[caelum, past, sphere]
+    objs = Object{T}[caelum, frustum, sphere]
 
     ni = 200
     nj = 200
@@ -636,9 +635,9 @@ function example2()
 
     metric = kerr_schild
     caelum = Sphere{T}(Vec{T}(0, 0, 0, 0), Vec{T}(1, 0, 0, 0), -10)
-    past = Plane{T}(-20)
+    frustum = Plane{T}(-20)
     sphere = Sphere{T}(Vec{T}(0, 4, 0, 0), Vec{T}(1, 0, 0, 0), T(1)/2)
-    objs = Object{T}[caelum, past, sphere]
+    objs = Object{T}[caelum, frustum, sphere]
 
     ni = 200
     nj = 200
@@ -667,10 +666,6 @@ function example2()
     #                   T[mod(p.rgb[1] + 1/2, 1) for p in canvas.pixels]',
     #                   T[mod(p.rgb[2] + 1/2, 1) for p in canvas.pixels]',
     #                   T[mod(p.rgb[3] + 1/2, 1) for p in canvas.pixels]')
-    scene = colorview(RGB,
-                      T[mod(p.rgb[1] + 1/2, 1) for p in canvas.pixels]',
-                      T[mod(p.rgb[2] + 1/2, 1) for p in canvas.pixels]',
-                      T[mod(p.rgb[3] + 1/2, 1) for p in canvas.pixels]')
     scene = colorview(RGB,
                       T[p.rgb[1] for p in canvas.pixels]',
                       T[p.rgb[2] for p in canvas.pixels]',
