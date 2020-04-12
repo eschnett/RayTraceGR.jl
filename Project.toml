@@ -5,10 +5,12 @@ version = "0.1.0"
 
 [deps]
 Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageView = "86fae568-95e7-573e-a6b2-d8a6b900c9ef"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+SharedArrays = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
