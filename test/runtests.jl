@@ -70,5 +70,6 @@ end
     p = Pixel{T}(x, u, zeros(SVector{3,T}))
     objs = Object{T}[]
     p = trace_ray(metric, objs, p)
-    @test maximum(abs.(p.rgb - [10, 0, 0])) <= tol
+    # @test maximum(abs.(p.rgb - [10, 0, 0])) <= tol
+    @test maximum(abs.(p.rgb - [1, 0, 0])) <= tol
 end
