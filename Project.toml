@@ -4,6 +4,7 @@ authors = ["Erik Schnetter <schnetter@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageView = "86fae568-95e7-573e-a6b2-d8a6b900c9ef"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"

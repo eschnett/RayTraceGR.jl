@@ -32,9 +32,9 @@ version = "0.0.4"
 
 [[ArrayInterface]]
 deps = ["LinearAlgebra", "Requires", "SparseArrays"]
-git-tree-sha1 = "c851f4dab787f78ab3389657a0a50c8d3270dd6a"
+git-tree-sha1 = "b34d74dc877e6083c4c5c553a685e89e10ea4662"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "2.8.1"
+version = "2.8.3"
 
 [[AxisAlgorithms]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
@@ -50,6 +50,12 @@ version = "0.4.2"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[[BinaryProvider]]
+deps = ["Libdl", "SHA"]
+git-tree-sha1 = "5b08ed6036d9d3f0ee6369410b830f8873d4024c"
+uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
+version = "0.5.8"
 
 [[Bzip2_jll]]
 deps = ["Libdl", "Pkg"]
@@ -138,6 +144,18 @@ deps = ["LinearAlgebra", "Rotations", "StaticArrays"]
 git-tree-sha1 = "71333ea3f841bca6c1aa2863f11758eb9b37bfbc"
 uuid = "150eb455-5306-5404-9cee-2592286d6298"
 version = "0.5.1"
+
+[[Coverage]]
+deps = ["CoverageTools", "HTTP", "JSON", "LibGit2", "MbedTLS"]
+git-tree-sha1 = "540c90d34374c82bbb12c4e06df1ef246a81ace2"
+uuid = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
+version = "1.0.0"
+
+[[CoverageTools]]
+deps = ["LibGit2"]
+git-tree-sha1 = "328154f6062b0053588295df6bffe22e1436597a"
+uuid = "c36e975a-824b-4404-a568-ef97ca766997"
+version = "1.1.0"
 
 [[CustomUnitRanges]]
 git-tree-sha1 = "0d42a23be3acfb3c58569b28ed3ab8bd67af5ced"
@@ -333,6 +351,12 @@ git-tree-sha1 = "cfb9babde5416cfab80068ae648b928a36aa269a"
 uuid = "27996c0f-39cd-5cc1-a27a-05f136f946b6"
 version = "1.0.2"
 
+[[HTTP]]
+deps = ["Base64", "Dates", "IniFile", "MbedTLS", "Sockets"]
+git-tree-sha1 = "cd60d9a575d3b70c026d7e714212fd4ecf86b4bb"
+uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+version = "0.8.13"
+
 [[HarfBuzz_jll]]
 deps = ["Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Gettext_jll", "Glib_jll", "Graphite2_jll", "Libdl", "Libffi_jll", "Pkg"]
 git-tree-sha1 = "7a206ed46082e986179586a4ed60cbc740313ea6"
@@ -358,10 +382,10 @@ uuid = "f332f351-ec65-5f6a-b3d1-319c6670881a"
 version = "0.3.5"
 
 [[ImageCore]]
-deps = ["Colors", "FixedPointNumbers", "Graphics", "MappedArrays", "OffsetArrays", "PaddedViews", "Reexport", "Requires"]
-git-tree-sha1 = "c6028e90be41f36e83e962ea244019fa5d325986"
+deps = ["Colors", "FixedPointNumbers", "Graphics", "MappedArrays", "MosaicViews", "OffsetArrays", "PaddedViews", "Reexport", "Requires"]
+git-tree-sha1 = "4aa7db337d48529a0a9f6e31ed5ed0a805b6fd7c"
 uuid = "a09fc81d-aa75-5fe9-8630-4744c3626534"
-version = "0.8.12"
+version = "0.8.13"
 
 [[ImageDistances]]
 deps = ["ColorVectorSpace", "Distances", "ImageCore", "LinearAlgebra", "MappedArrays", "Statistics"]
@@ -433,6 +457,12 @@ git-tree-sha1 = "f5fc07d4e706b84f72d54eedcc1c13d92fb0871c"
 uuid = "d25df0c9-e2be-5dd7-82c8-3ad0b3e990b9"
 version = "0.1.2"
 
+[[IniFile]]
+deps = ["Test"]
+git-tree-sha1 = "098e4d2c533924c921f9f9847274f2ad89e018b8"
+uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
+version = "0.5.0"
+
 [[IntelOpenMP_jll]]
 deps = ["Libdl", "Pkg"]
 git-tree-sha1 = "fb8e1c7a5594ba56f9011310790e03b5384998d6"
@@ -470,6 +500,12 @@ version = "0.8.4"
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
+
+[[JSON]]
+deps = ["Dates", "Mmap", "Parsers", "Unicode"]
+git-tree-sha1 = "b34d7cef7b337321e97d22242c3c2b91f476748e"
+uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+version = "0.21.0"
 
 [[JpegTurbo_jll]]
 deps = ["Libdl", "Pkg"]
@@ -546,9 +582,9 @@ version = "2.34.0+1"
 
 [[Libtiff_jll]]
 deps = ["JpegTurbo_jll", "Libdl", "Pkg", "Zlib_jll", "Zstd_jll"]
-git-tree-sha1 = "6cab365abd0108b45e1cbd234223152d88647742"
+git-tree-sha1 = "0764d2317bf99a0120325720f83d356f6016b05c"
 uuid = "89763e89-9b03-5906-acba-b20f662cd828"
-version = "4.0.10+0"
+version = "4.0.10+1"
 
 [[Libuuid_jll]]
 deps = ["Libdl", "Pkg"]
@@ -601,6 +637,12 @@ version = "0.2.2"
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
+[[MbedTLS]]
+deps = ["BinaryProvider", "Dates", "Libdl", "Random", "Sockets"]
+git-tree-sha1 = "85f5947b53c8cfd53ccfa3f4abae31faa22c2181"
+uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
+version = "0.7.0"
+
 [[Missings]]
 deps = ["DataAPI"]
 git-tree-sha1 = "de0a5ce9e5289f27df672ffabef4d1e5861247d5"
@@ -609,6 +651,12 @@ version = "0.4.3"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
+
+[[MosaicViews]]
+deps = ["OffsetArrays", "PaddedViews"]
+git-tree-sha1 = "b483b88403ac0ac01667778cbb29462b111b1deb"
+uuid = "e94cdb99-869f-56ef-bcf0-1ae2bcbe0389"
+version = "0.2.2"
 
 [[MuladdMacro]]
 git-tree-sha1 = "c6190f9a7fc5d9d5915ab29f2134421b12d24a68"
@@ -684,6 +732,12 @@ deps = ["OrderedCollections"]
 git-tree-sha1 = "b62b2558efb1eef1fa44e4be5ff58a515c287e38"
 uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 version = "0.12.0"
+
+[[Parsers]]
+deps = ["Dates", "Test"]
+git-tree-sha1 = "75d07cb840c300084634b4991761886d0d762724"
+uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
+version = "1.0.1"
 
 [[Pixman_jll]]
 deps = ["Libdl", "Pkg"]
