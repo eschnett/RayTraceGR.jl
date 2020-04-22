@@ -1,5 +1,6 @@
 module RayTraceGR
 
+using ComputedFieldTypes
 # using Distributed
 using Images
 using LinearAlgebra
@@ -244,68 +245,61 @@ end
 
 ################################################################################
 
-export S; const S = S"-+++"     # signature
-
-@mixedbasis S
-# defines V
-# defines (⟨-++++---⟩*, v, v₁, v₂, v₃, v₄, w¹, w², w³, w⁴, v₁₂, v₁₃,
-# v₁₄, v₁w¹, v₁w², v₁w³, v₁w⁴, v₂₃, v₂₄, v₂w¹, v₂w², v₂w³, v₂w⁴, v₃₄,
-# v₃w¹, v₃w², v₃w³, v₃w⁴, v₄w¹, v₄w², v₄w³, v₄w⁴, w¹², w¹³, w¹⁴, w²³,
-# w²⁴, w³⁴, v₁₂₃, v₁₂₄, v₁₂w¹, v₁₂w², v₁₂w³, v₁₂w⁴, v₁₃₄, v₁₃w¹,
-# v₁₃w², v₁₃w³, v₁₃w⁴, v₁₄w¹, v₁₄w², v₁₄w³, v₁₄w⁴, v₁w¹², v₁w¹³,
-# v₁w¹⁴, v₁w²³, v₁w²⁴, v₁w³⁴, v₂₃₄, v₂₃w¹, v₂₃w², v₂₃w³, v₂₃w⁴, v₂₄w¹,
-# v₂₄w², v₂₄w³, v₂₄w⁴, v₂w¹², v₂w¹³, v₂w¹⁴, v₂w²³, v₂w²⁴, v₂w³⁴,
-# v₃₄w¹, v₃₄w², v₃₄w³, v₃₄w⁴, v₃w¹², v₃w¹³, v₃w¹⁴, v₃w²³, v₃w²⁴,
-# v₃w³⁴, v₄w¹², v₄w¹³, v₄w¹⁴, v₄w²³, v₄w²⁴, v₄w³⁴, w¹²³, w¹²⁴, w¹³⁴,
-# w²³⁴, v₁₂₃₄, v₁₂₃w¹, v₁₂₃w², v₁₂₃w³, v₁₂₃w⁴, v₁₂₄w¹, v₁₂₄w², v₁₂₄w³,
-# v₁₂₄w⁴, v₁₂w¹², v₁₂w¹³, v₁₂w¹⁴, v₁₂w²³, v₁₂w²⁴, v₁₂w³⁴, v₁₃₄w¹,
-# v₁₃₄w², v₁₃₄w³, v₁₃₄w⁴, v₁₃w¹², v₁₃w¹³, v₁₃w¹⁴, v₁₃w²³, v₁₃w²⁴,
-# v₁₃w³⁴, v₁₄w¹², v₁₄w¹³, v₁₄w¹⁴, v₁₄w²³, v₁₄w²⁴, v₁₄w³⁴, v₁w¹²³,
-# v₁w¹²⁴, v₁w¹³⁴, v₁w²³⁴, v₂₃₄w¹, v₂₃₄w², v₂₃₄w³, v₂₃₄w⁴, v₂₃w¹²,
-# v₂₃w¹³, v₂₃w¹⁴, v₂₃w²³, v₂₃w²⁴, v₂₃w³⁴, v₂₄w¹², v₂₄w¹³, v₂₄w¹⁴,
-# v₂₄w²³, v₂₄w²⁴, v₂₄w³⁴, v₂w¹²³, v₂w¹²⁴, v₂w¹³⁴, v₂w²³⁴, v₃₄w¹²,
-# v₃₄w¹³, v₃₄w¹⁴, v₃₄w²³, v₃₄w²⁴, v₃₄w³⁴, v₃w¹²³, v₃w¹²⁴, v₃w¹³⁴,
-# v₃w²³⁴, v₄w¹²³, v₄w¹²⁴, v₄w¹³⁴, v₄w²³⁴, w¹²³⁴, v₁₂₃₄w¹, v₁₂₃₄w²,
-# v₁₂₃₄w³, v₁₂₃₄w⁴, v₁₂₃w¹², v₁₂₃w¹³, v₁₂₃w¹⁴, v₁₂₃w²³, v₁₂₃w²⁴,
-# v₁₂₃w³⁴, v₁₂₄w¹², v₁₂₄w¹³, v₁₂₄w¹⁴, v₁₂₄w²³, v₁₂₄w²⁴, v₁₂₄w³⁴,
-# v₁₂w¹²³, v₁₂w¹²⁴, v₁₂w¹³⁴, v₁₂w²³⁴, v₁₃₄w¹², v₁₃₄w¹³, v₁₃₄w¹⁴,
-# v₁₃₄w²³, v₁₃₄w²⁴, v₁₃₄w³⁴, v₁₃w¹²³, v₁₃w¹²⁴, v₁₃w¹³⁴, v₁₃w²³⁴,
-# v₁₄w¹²³, v₁₄w¹²⁴, v₁₄w¹³⁴, v₁₄w²³⁴, v₁w¹²³⁴, v₂₃₄w¹², v₂₃₄w¹³,
-# v₂₃₄w¹⁴, v₂₃₄w²³, v₂₃₄w²⁴, v₂₃₄w³⁴, v₂₃w¹²³, v₂₃w¹²⁴, v₂₃w¹³⁴,
-# v₂₃w²³⁴, v₂₄w¹²³, v₂₄w¹²⁴, v₂₄w¹³⁴, v₂₄w²³⁴, v₂w¹²³⁴, v₃₄w¹²³,
-# v₃₄w¹²⁴, v₃₄w¹³⁴, v₃₄w²³⁴, v₃w¹²³⁴, v₄w¹²³⁴, v₁₂₃₄w¹², v₁₂₃₄w¹³,
-# v₁₂₃₄w¹⁴, v₁₂₃₄w²³, v₁₂₃₄w²⁴, v₁₂₃₄w³⁴, v₁₂₃w¹²³, v₁₂₃w¹²⁴,
-# v₁₂₃w¹³⁴, v₁₂₃w²³⁴, v₁₂₄w¹²³, v₁₂₄w¹²⁴, v₁₂₄w¹³⁴, v₁₂₄w²³⁴,
-# v₁₂w¹²³⁴, v₁₃₄w¹²³, v₁₃₄w¹²⁴, v₁₃₄w¹³⁴, v₁₃₄w²³⁴, v₁₃w¹²³⁴,
-# v₁₄w¹²³⁴, v₂₃₄w¹²³, v₂₃₄w¹²⁴, v₂₃₄w¹³⁴, v₂₃₄w²³⁴, v₂₃w¹²³⁴,
-# v₂₄w¹²³⁴, v₃₄w¹²³⁴, v₁₂₃₄w¹²³, v₁₂₃₄w¹²⁴, v₁₂₃₄w¹³⁴, v₁₂₃₄w²³⁴,
-# v₁₂₃w¹²³⁴, v₁₂₄w¹²³⁴, v₁₃₄w¹²³⁴, v₂₃₄w¹²³⁴, v₁₂₃₄w¹²³⁴)
+function Base.sum(::Type{T}, f::F, r1::R1) where {T, F, R}
+    s = T(0)
+    for i in r1
+        s += f(i)::T
+    end
+    s
+end
+function Base.sum(::Type{T}, f::F, r1::R1, r2::R2) where {T, F, R1, R2}
+    s = T(0)
+    for i in r1, j in r2
+        s += f(i, j)::T
+    end
+    s
+end
+function Base.sum(::Type{T}, f::F, r1::R1, r2::R2, r3::R3
+                  ) where {T, F, R1, R2, R3}
+    s = T(0)
+    for i in r1, j in r2, k in r3
+        s += f(i, j, k)::T
+    end
+    s
+end
 
 
 
-# export V; const V = Λ(S)                    # basis
-# export M; const M = typeof(V).parameters[1] # manifold
+################################################################################
 
-# @basis @
-# # defines ⟨-+++⟩, v, v₁, v₂, v₃, v₄, v₁₂, v₁₃, v₁₄, v₂₃, v₂₄, v₃₄,
-# # v₁₂₃, v₁₂₄, v₁₃₄, v₂₃₄, v₁₂₃₄
+const S = S"-+++"                     # signature
+const D = ndims(S)                    # dimensions
+const b = ntuple(i -> Λ(S).b[1+i], D) # basis vectors
 
+@basis S                        # define convenience names
+# V, v, v1, v2, v3, v4, ...., v1234
 
-# const Vec = TensorGraded{M, 1}
-# const Mat = TensorGraded{M⊕M', 2}
+const Vec{T} = Chain{V, 1, T} where {T}
+fullVec(::Type{T}) where {T} = fulltype(Vec{T})
+makeVec(::Type{T}, x) where {T} = Chain{T}(x)
 
-const Vec{T} = Chain{M, 1, T} where {T}
-const Mat{T} = Chain{M⊕M', 2, T} where {T}
+@computed struct Mat{T}
+    elts::NTuple{D, fullVec(T)}
+end
+fullMat(::Type{T}) where {T} = fulltype(Mat{T})
+makeMat(::Type{T}, xs) where {T} = Mat{T}(map(x->makeVec(T,x), xs))
 
+@generated function Base.:*(A::Mat{T}, x::Vec{T})::Vec{T} where {T}
+    quote
+        y = +($([:((x|$(b[i]))*$(abs2(b[i])) * A.elts[$i]) for i in 1:D]...))
+        y(1)
+    end
+end
 
+x = makeVec(Int, v3)
+A = makeMat(Int, (v1, v2, v3, v3))
 
-# Λ(S)
-# Λ(S)'
-# 
-# Λ(S).v1
-# Λ(S)'.w2
-# Λ(S).v1 ∧ Λ(S)'.w2
-# Λ(S)'.w2(Λ(S).v1)
+@show A * x
 
 
 
@@ -352,28 +346,6 @@ function sten3(::Type{T}, f::F) where {T, F}
     @SArray T[f(a, b, c) for a in 1:D, b in 1:D, c in 1:D]
 end
 
-export ssum, ssum2, ssum3
-function ssum(::Type{T}, f::F, r::R=1:D) where {T, F, R}
-    s = T(0)
-    for i in r
-        s += f(i)::T
-    end
-    s
-end
-function ssum2(::Type{T}, f::F, r::R=1:D) where {T, F, R}
-    s = T(0)
-    for i in r, j in r
-        s += f(i, j)::T
-    end
-    s
-end
-function ssum3(::Type{T}, f::F, r::R=1:D) where {T, F, R}
-    s = T(0)
-    for i in r, j in r, k in r
-        s += f(i, j, k)::T
-    end
-    s
-end
 
 
 

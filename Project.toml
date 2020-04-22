@@ -4,12 +4,14 @@ authors = ["Erik Schnetter <schnetter@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+AbstractTensors = "a8e43f4a-99b7-5565-8bf1-0165161caaea"
 ComputedFieldTypes = "459fdd68-db75-56b8-8c15-d717a790f88e"
 DirectSum = "22fd7b30-a8c0-5bf2-aabe-97783860d07c"
 Grassmann = "4df31cd9-4c27-5bea-88d0-e6a7146666d8"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageView = "86fae568-95e7-573e-a6b2-d8a6b900c9ef"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+Leibniz = "edad4870-8a01-11e9-2d75-8f02e448fc59"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
