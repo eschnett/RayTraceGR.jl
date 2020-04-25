@@ -1,59 +1,106 @@
 using RayTraceGR
 
+using ComputedFieldTypes
 using Grassmann
 using LinearAlgebra
-# using StaticArrays
+using StaticArrays
 using Test
 
 
 
 const Rat128 = Rational{Int128}
-Base.rand(::Type{Rat128}) = rand(Int16) // 256
+Base.rand(::Type{Rat128}) = Rat128(rand(Int16)) // 256
 Base.rand(::Type{Rat128}, n::Integer) = Rat128[rand(Rat128) for i in 1:n]
 Base.rand(::Type{Rat128}, n1::Integer, n2::Integer) =
     Rat128[rand(Rat128) for i in 1:n1, j in 1:n2]
 
 
 
-@testset "Linear operators" begin
+@testset "Special values for D=$D" for D in 1:4
+    V = SubManifold(Signature(D))
     T = Rat128
+
+    Ch(T) = Chain{V,1,T}
+    fullCh(T) = fulltype(Ch(T))
+
+    @test zero(T)::T == 0
+    rand(T)::T
+
+    @test zero(Ch(T))::fullCh(T) == 0
+    rand(Ch(T))::fullCh(T)
+
+    @test zero(fullCh(T))::fullCh(T) == 0
+    rand(fullCh(T))::fullCh(T)
+
+    zero(Ch(Ch(T)))::fullCh(Ch(T)) # inefficient
+    # @test zero(Ch(Ch(T)))::fullCh(Ch(T)) == 0
+    rand(Ch(Ch(T)))::fullCh(Ch(T)) # inefficient
+
+    @test zero(Ch(fullCh(T)))::fullCh(fullCh(T)) == 0
+    rand(Ch(fullCh(T)))::fullCh(fullCh(T))
+
+    zero(fullCh(Ch(T)))::fullCh(Ch(T)) # inefficient
+    # @test zero(fullCh(Ch(T)))::fullCh(fullCh(T)) == 0
+    rand(fullCh(Ch(T)))::fullCh(Ch(T)) # inefficient
+
+    @test zero(fullCh(fullCh(T)))::fullCh(fullCh(T)) == 0
+    rand(fullCh(fullCh(T)))::fullCh(fullCh(T))
+end
+
+
+
+@testset "Linear operators for D=$D" for D in 1:4
+    V = SubManifold(Signature(D))
+    T = Rat128
+    Vec(X) = Chain{V,1,X}
+    Mat(X) = Chain{V,1, fulltype(Vec(X))}
+
     for n in 1:100
-        A1 = rand(T, D, D)
-        A1::Matrix{T}
-        x1 = rand(T, D)
-        x1::Vector{T}
+
+        A = rand(Mat(T))
+        x = rand(Vec(T))
+        y = A ⋅ x
+        y :: Vec(T)
+
+        x1 = x.v
+        A1 = SMatrix{D,D,T}((A.v[j].v[i] for i in 1:D, j in 1:D)...)
         y1 = A1 * x1
-        y1::Vector{T}
-        A = makeMat(T, j->sum(Vec{T}, i->makeVec(T, A1[i,j]*v(i)), 1:D))
-        A::Mat{T}
-        x = sum(Vec{T}, i->makeVec(T, x1[i]*v(i)), 1:D)
-        x::Vec{T}
-        y = A(x)
-        y::Vec{T}
-        y0 = sum(Vec{T}, i->makeVec(T, y1[i]*v(i)), 1:D)
-        y0::Vec{T}
-        @test y == y0
+        y1 :: SVector{D,T}
+
+        @test y.v == y1
     end
+
+    # for n in 1:100
+    #     A = rand(Mat(T))
+    #     x = rand(Vec(T))
+    #     y = rand(Vec(T))
+    # 
+    #     @test A ⋅ (x ∧ y) == (A ⋅ x) ∧ (A ⋅ y)
+    # end
 end
 
 
 
 @testset "Minkowski metric" begin
     T = Rat128
+    Vec(X) = Chain{V,1,X}
+    Mat(X) = Chain{V,1, fulltype(Vec(X))}
+
     metric = minkowski
 
-    x = makeVec(T, d->0)
+    x = Chain{V,1}(SVector{D,T}(0,0,0,0))
     g = metric(x)
 
-    detg = det(g)
-    gu = inv(g)
-    detgu = det(gu)
+    detg = detM(g)
+    gu = invM(g)
+    detgu = detM(gu)
 
     @test detg * detgu == 1
+
     for n in 1:100
-        x = rand(Vec{T})
-        @test gu(g(x)) == x
-        @test g(gu(x)) == x
+        x = rand(Vec(T))
+        @test gu ⋅ (g ⋅ x) == x
+        @test g ⋅ (gu ⋅ x) == x
     end
 
     # (g1,dg) = dmetric(metric, x)

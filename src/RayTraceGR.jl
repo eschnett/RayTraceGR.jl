@@ -251,119 +251,147 @@ end
 
 ################################################################################
 
-function Base.sum(::Type{T}, f::F, r1::R1) where {T, F, R1}
-    s = zero(T)
-    for i in r1
-        s += f(i)::T
-    end
-    s
-end
-function Base.sum(::Type{T}, f::F, r1::R1, r2::R2) where {T, F, R1, R2}
-    s = zero(T)
-    for i in r1, j in r2
-        s += f(i, j)::T
-    end
-    s
-end
-function Base.sum(::Type{T}, f::F, r1::R1, r2::R2, r3::R3
-                  ) where {T, F, R1, R2, R3}
-    s = zero(T)
-    for i in r1, j in r2, k in r3
-        s += f(i, j, k)::T
-    end
-    s
-end
+# function Base.sum(::Type{T}, f::F, r1::R1) where {T, F, R1}
+#     s = zero(T)
+#     for i in r1
+#         s += f(i)::T
+#     end
+#     s
+# end
+# function Base.sum(::Type{T}, f::F, r1::R1, r2::R2) where {T, F, R1, R2}
+#     s = zero(T)
+#     for i in r1, j in r2
+#         s += f(i, j)::T
+#     end
+#     s
+# end
+# function Base.sum(::Type{T}, f::F, r1::R1, r2::R2, r3::R3
+#                   ) where {T, F, R1, R2, R3}
+#     s = zero(T)
+#     for i in r1, j in r2, k in r3
+#         s += f(i, j, k)::T
+#     end
+#     s
+# end
 
 
 
 ################################################################################
 
-export S, D, b
-const S = S"++++"                     # signature
-const D = ndims(S)                    # dimensions
+export S, D
+const S = S"++++"               # signature
+const D = ndims(S)              # dimensions
 
-export V, v, v1,v2,v3,v4
+export V, v
 @basis S                        # define convenience names
-# V, v, v1, v2, v3, v4, ...., v1234
 
 
 
-# vector
-export Vec, fullVec, makeVec
-const Vec{T} = Chain{V, 1, T} where {T}
-fullVec(::Type{T}) where {T} = fulltype(Vec{T})
-makeVec(::Type{T}, x::TensorAlgebra) where {T} = Chain{T}(Chain(x))::Vec{T}
-makeVec(::Type{T}, f::F) where {T, F} =
-    sum(Vec{T}, i -> Chain(T(f(i)), v(i))::Vec{T}, 1:D)::Vec{T}
-
-Base.rand(::Type{<:Vec{T}}) where {T} = makeVec(T, d->rand(T))::Vec{T}
-
-
-
-# bivector
-export Vec2, fullVec2, makeVec2
-const Vec2{T} = Chain{V, 2, T} where {T}
-fullVec2(::Type{T}) where {T} = fulltype(Vec2{T})
-makeVec2(::Type{T}, x::TensorAlgebra) where {T} = Chain{T}(Chain(x))::Vec2{T}
-makeVec2(::Type{T}, f::F) where {T, F} =
-    sum(Vec{T},
-        i -> sum(Vec{T}, j -> Chain(T(f(i,j)), v(i,j))::Vec{T}, i+1:D),
-        1:D)::Vec2{T}
-
-Base.rand(::Type{<:Vec2{T}}) where {T} = makeVec2(T, d->rand(T))::Vec2{T}
-
-
-
-# vector-valued linear function of a vector
-export Mat, fullMat, makeMat
-@computed struct Mat{T}
-    elts::NTuple{D, fullVec(T)}
-end
-Base.zero(::Type{<:Mat{T}}) where {T} = Mat{T}(ntuple(i -> zero(Vec{T}), D))
-
-fullMat(::Type{T}) where {T} = fulltype(Mat{T})
-makeMat(::Type{T}, xs::F) where {T, F} = Mat{T}(ntuple(d->makeVec(T,xs(d)), D))
-
-Base.rand(::Type{<:Mat{T}}) where {T} = makeMat(T, d->rand(Vec{T}))::Mat{T}
-
-function (A::Mat{T})(x::Vec{T}) where {T}
-    sum(Chain{V,1,T}, d -> x.v[d] * A.elts[d], 1:D)::Vec{T}
-end
-
-function LinearAlgebra.det(A::Mat{T}) where {T}
-    detA = one(MultiVector{V,T})
-    for d in 1:D
-        detA = detA ∧ A(makeVec(T, v(d)))
-    end
-    detA.v[end]::T
-end
-
-function Base.inv(A::Mat{T}) where {T}
-    A1 = SMatrix{D,D}(T[A.elts[j].v[i] for i in 1:D, j in 1:D])
-    A1inv = inv(A1)
-    Ainv = makeMat(T, j->makeVec(T, i->A1inv[i,j]))
-    Ainv::Mat{T}
+function Base.rand(::Type{<:Chain{V,1,T}}) where {V, T}
+    D = ndims(V)
+    Chain{V,1}(SVector{D,T}((rand(T) for i in 1:ndims(V))...))::Chain{V,1,<:T}
 end
 
 
 
-# bivector-valued linear function of a vector
-export Mat3, fullMat3, makeMat3
-@computed struct Mat3{T}
-    elts::NTuple{D, fullVec(T)}
-end
-Base.zero(::Type{<:Mat3{T}}) where {T} = Mat3{T}(ntuple(i -> zero(Vec{T}), D))
-
-fullMat3(::Type{T}) where {T} = fulltype(Mat3{T})
-makeMat3(::Type{T}, xs::Tuple) where {T} = Mat3{T}(map(x->makeVec(T,x), xs))
-
-function Base.rand(::Type{<:Mat3{T}}) where {T}
-    makeMat3(T, ntuple(d->rand(Vec{T})))::Mat3{T}
+export detM
+function detM(A::Chain{V,1, <:Chain{V,1,T}}) where {V, T}
+    # Determinant via SMatrix
+    D = ndims(V)
+    A1 = SMatrix{D,D,T}((A.v[j].v[i] for i in 1:D, j in 1:D)...)
+    det(A1)::T
 end
 
-function (A::Mat3{T})(x::Vec{T}) where {T}
-    sum(Chain{V,1,T}, d -> x.v[d] * A.elts[d], 1:D)::Vec{T}
+export invM
+function invM(A::Chain{V,1, <:Chain{V,1,T}}) where {V, T}
+    # Invert via SMatrix
+    D = ndims(V)
+    CT = fulltype(Chain{V,1,T})
+    A1 = SMatrix{D,D,T}((A.v[j].v[i] for i in 1:D, j in 1:D)...)
+    B1 = inv(A1)
+    Chain{V,1}(SVector{D,CT}(
+        (Chain{V,1}(SVector{D,T}((B1[i,j] for i in 1:D)...))
+         for j in 1:D)...))::Chain{V,1, <:Chain{V,1,T}}
 end
+
+
+
+# # vector
+# export Vec, fullVec, makeVec
+# const Vec{T} = Chain{V, 1, T} where {T}
+# fullVec(::Type{T}) where {T} = fulltype(Vec{T})
+# makeVec(::Type{T}, x::TensorAlgebra) where {T} = Chain{T}(Chain(x))::Vec{T}
+# makeVec(::Type{T}, f::F) where {T, F} =
+#     sum(Vec{T}, i -> Chain(T(f(i)), v(i))::Vec{T}, 1:D)::Vec{T}
+# 
+# Base.rand(::Type{<:Vec{T}}) where {T} = makeVec(T, d->rand(T))::Vec{T}
+# 
+# 
+# 
+# # bivector
+# export Vec2, fullVec2, makeVec2
+# const Vec2{T} = Chain{V, 2, T} where {T}
+# fullVec2(::Type{T}) where {T} = fulltype(Vec2{T})
+# makeVec2(::Type{T}, x::TensorAlgebra) where {T} = Chain{T}(Chain(x))::Vec2{T}
+# makeVec2(::Type{T}, f::F) where {T, F} =
+#     sum(Vec{T},
+#         i -> sum(Vec{T}, j -> Chain(T(f(i,j)), v(i,j))::Vec{T}, i+1:D),
+#         1:D)::Vec2{T}
+# 
+# Base.rand(::Type{<:Vec2{T}}) where {T} = makeVec2(T, d->rand(T))::Vec2{T}
+# 
+# 
+# 
+# # vector-valued linear function of a vector
+# export Mat, fullMat, makeMat
+# @computed struct Mat{T}
+#     elts::NTuple{D, fullVec(T)}
+# end
+# Base.zero(::Type{<:Mat{T}}) where {T} = Mat{T}(ntuple(i -> zero(Vec{T}), D))
+# 
+# fullMat(::Type{T}) where {T} = fulltype(Mat{T})
+# makeMat(::Type{T}, xs::F) where {T, F} = Mat{T}(ntuple(d->makeVec(T,xs(d)), D))
+# 
+# Base.rand(::Type{<:Mat{T}}) where {T} = makeMat(T, d->rand(Vec{T}))::Mat{T}
+# 
+# function (A::Mat{T})(x::Vec{T}) where {T}
+#     sum(Chain{V,1,T}, d -> x.v[d] * A.elts[d], 1:D)::Vec{T}
+# end
+# 
+# function LinearAlgebra.det(A::Mat{T}) where {T}
+#     detA = one(MultiVector{V,T})
+#     for d in 1:D
+#         detA = detA ∧ A(makeVec(T, v(d)))
+#     end
+#     detA.v[end]::T
+# end
+# 
+# function Base.inv(A::Mat{T}) where {T}
+#     A1 = SMatrix{D,D}(T[A.elts[j].v[i] for i in 1:D, j in 1:D])
+#     A1inv = inv(A1)
+#     Ainv = makeMat(T, j->makeVec(T, i->A1inv[i,j]))
+#     Ainv::Mat{T}
+# end
+# 
+# 
+# 
+# # bivector-valued linear function of a vector
+# export Mat3, fullMat3, makeMat3
+# @computed struct Mat3{T}
+#     elts::NTuple{D, fullVec(T)}
+# end
+# Base.zero(::Type{<:Mat3{T}}) where {T} = Mat3{T}(ntuple(i -> zero(Vec{T}), D))
+# 
+# fullMat3(::Type{T}) where {T} = fulltype(Mat3{T})
+# makeMat3(::Type{T}, xs::Tuple) where {T} = Mat3{T}(map(x->makeVec(T,x), xs))
+# 
+# function Base.rand(::Type{<:Mat3{T}}) where {T}
+#     makeMat3(T, ntuple(d->rand(Vec{T})))::Mat3{T}
+# end
+# 
+# function (A::Mat3{T})(x::Vec{T}) where {T}
+#     sum(Chain{V,1,T}, d -> x.v[d] * A.elts[d], 1:D)::Vec{T}
+# end
 
 
 
@@ -375,8 +403,10 @@ export minkowski
 """
 Minkowski metric g_ab
 """
-function minkowski(x::Vec{T})::Mat{T} where {T}
-    makeMat(T, i -> bitsign(i==1) * v(i))
+function minkowski(x::Chain{V,1,T}) where {V, T}
+    D = ndims(V)
+    CT = fulltype(Chain{V,1,T})
+    Chain{V,1}(SVector{D,CT}((Chain(T(bitsign(i==1)) * v(i)) for i in 1:D)...))
 end
 
 
@@ -411,27 +441,27 @@ end
 
 
 
-export dmetric
-"""
-Derivative of four-metric g_ab,c
-"""
-# TODO: Use dual numbers to automate this
-function dmetric(metric::Metric,
-                 x::Vec{T})::Tuple{Mat{T}, Ten3{T}} where {Metric, T}
-    DT = Vec{T}
-    TDT = Dual{T,DT}
-    # xdx = @SVector TDT[
-    #     TDT(x[a], @SVector T[b==a ? 1 : 0 for b in 1:D])
-    #     for a in 1:D]
-    xdx = Vec{TDT}(TDT(x[1], Vec{T}(1, 0, 0, 0)),
-                   TDT(x[2], Vec{T}(0, 1, 0, 0)),
-                   TDT(x[3], Vec{T}(0, 0, 1, 0)),
-                   TDT(x[4], Vec{T}(0, 0, 0, 1)))
-    gdg = metric(xdx)
-    g = smat(T, (a,b) -> gdg[a,b].val)
-    dg = sten3(T, (a,b,c) -> gdg[a,b].eps[c])
-    (g, dg)
-end
+# export dmetric
+# """
+# Derivative of four-metric g_ab,c
+# """
+# # TODO: Use dual numbers to automate this
+# function dmetric(metric::Metric,
+#                  x::Vec{T})::Tuple{Mat{T}, Ten3{T}} where {Metric, T}
+#     DT = Vec{T}
+#     TDT = Dual{T,DT}
+#     # xdx = @SVector TDT[
+#     #     TDT(x[a], @SVector T[b==a ? 1 : 0 for b in 1:D])
+#     #     for a in 1:D]
+#     xdx = Vec{TDT}(TDT(x[1], Vec{T}(1, 0, 0, 0)),
+#                    TDT(x[2], Vec{T}(0, 1, 0, 0)),
+#                    TDT(x[3], Vec{T}(0, 0, 1, 0)),
+#                    TDT(x[4], Vec{T}(0, 0, 0, 1)))
+#     gdg = metric(xdx)
+#     g = smat(T, (a,b) -> gdg[a,b].val)
+#     dg = sten3(T, (a,b,c) -> gdg[a,b].eps[c])
+#     (g, dg)
+# end
 
 
 
