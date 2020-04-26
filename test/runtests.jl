@@ -103,10 +103,10 @@ end
         @test g ⋅ (gu ⋅ x) == x
     end
 
-    # (g1,dg) = dmetric(metric, x)
-    # @test g1 == g
-    # @test all(==(0), dg)
-    # 
+    (g1,dg) = dmetric(metric, x)
+    @test g1 == g
+    @test all(==(0), dg)
+
     # Γ = christoffel(metric, x)
     # @test all(==(0), Γ)
 end
