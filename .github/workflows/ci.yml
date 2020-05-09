@@ -10,8 +10,8 @@ jobs:
       matrix:
         # os: [ubuntu-latest, windows-latest, macOS-latest]
         os: [ubuntu-latest]
-        # julia-version: ["1.0", "1.4", "nightly"]
-        julia-version: ["1.0", "1.4", "1.5", "nightly"]
+        # julia-version: ["1.0", "1.4", "1.5", "nightly"]
+        julia-version: ["1.0", "1.4", "nightly"]
         # julia-arch: [x64, x86]
         julia-arch: [x64]
         # <<#HAS_EXCLUDES>>
