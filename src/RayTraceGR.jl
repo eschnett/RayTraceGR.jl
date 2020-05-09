@@ -1,10 +1,8 @@
 module RayTraceGR
 
-# using Distributed
+using DifferentialEquations
 using Images
 using LinearAlgebra
-using OrdinaryDiffEq
-# using SharedArrays
 using StaticArrays
 
 
@@ -246,59 +244,14 @@ end
 export D
 const D = 4
 
-export Vec, Mat, Ten3
-const Vec{T} = SVector{D,T}
-const Mat{T} = SMatrix{D,D,T}
-const Ten3{T} = SArray{Tuple{D,D,D}, T}
-
-
-
-export svec, smat, sten3
-function svec(::Type{T}, f::F) where {T, F}
-    @SArray T[f(a) for a in 1:D]
-end
-function smat(::Type{T}, f::F) where {T, F}
-    @SArray T[f(a, b) for a in 1:D, b in 1:D]
-end
-function sten3(::Type{T}, f::F) where {T, F}
-    @SArray T[f(a, b, c) for a in 1:D, b in 1:D, c in 1:D]
-end
-
-export ssum, ssum2, ssum3
-function ssum(::Type{T}, f::F, r::R=1:D) where {T, F, R}
-    s = T(0)
-    for i in r
-        s += f(i)::T
-    end
-    s
-end
-function ssum2(::Type{T}, f::F, r::R=1:D) where {T, F, R}
-    s = T(0)
-    for i in r, j in r
-        s += f(i, j)::T
-    end
-    s
-end
-function ssum3(::Type{T}, f::F, r::R=1:D) where {T, F, R}
-    s = T(0)
-    for i in r, j in r, k in r
-        s += f(i, j, k)::T
-    end
-    s
-end
-
-
-
-################################################################################
-
 
 
 export minkowski
 """
 Minkowski metric g_ab
 """
-function minkowski(x::Vec{T})::Mat{T} where {T}
-    smat(T, (a,b) -> a==b ? (a==1 ? -1 : 1) : 0)
+function minkowski(x::SVector{D,T})::SMatrix{D,D,T} where {T}
+    @SMatrix T[a==b ? (a==1 ? -1 : 1) : 0 for a in 1:D, b in 1:D]
 end
 
 
@@ -309,7 +262,7 @@ Kerr-Schild metric g_ab
 
 Living Reviews in Relativity, Greg Cook, 2000, section 3.3.1
 """
-function kerr_schild(xx::Vec{T})::Mat{T} where {T}
+function kerr_schild(xx::SVector{D,T})::SMatrix{D,D,T} where {T}
     M = 1
     a = 0                       # T(0.8)
 
@@ -317,16 +270,16 @@ function kerr_schild(xx::Vec{T})::Mat{T} where {T}
     @assert !any(isnan, (t, x, y, z))
 
     # <https://en.wikipedia.org/wiki/Kerr_metric>
-    η = smat(T, (a,b) -> a==b ? (a==1 ? -1 : 1) : 0)
+    η = @SMatrix T[a==b ? (a==1 ? -1 : 1) : 0 for a in 1:D, b in 1:D]
     ρ = sqrt(x^2 + y^2 + z^2)
     r = sqrt(ρ^2 - a^2)/2 + sqrt(a^2*z^2 + ((ρ^2 - a^2)/2)^2)
     f = 2*M*r^3 / (r^4 + a^2*z^2)
-    k = @SVector T[1,
-                   (r*x + a*y) / (r^2 + a^2),
-                   (r*y - a*x) / (r^2 + a^2),
-                   z / r]
+    k = SVector{D,T}(1,
+                     (r*x + a*y) / (r^2 + a^2),
+                     (r*y - a*x) / (r^2 + a^2),
+                     z / r)
 
-    g = smat(T, (a,b) -> η[a,b] + f * k[a] * k[b])
+    g = @SMatrix T[η[a,b] + f * k[a] * k[b] for a in 1:D, b in 1:D]
 
     g
 end
@@ -337,22 +290,17 @@ export dmetric
 """
 Derivative of four-metric g_ab,c
 """
-# TODO: Use dual numbers to automate this
-function dmetric(metric::Metric,
-                 x::Vec{T})::Tuple{Mat{T}, Ten3{T}} where {Metric, T}
-    DT = Vec{T}
+function dmetric(metric::Metric, x::SVector{D,T}) where {Metric, T}
+    DT = SVector{D,T}
     TDT = Dual{T,DT}
-    # xdx = @SVector TDT[
-    #     TDT(x[a], @SVector T[b==a ? 1 : 0 for b in 1:D])
-    #     for a in 1:D]
-    xdx = Vec{TDT}(TDT(x[1], Vec{T}(1, 0, 0, 0)),
-                   TDT(x[2], Vec{T}(0, 1, 0, 0)),
-                   TDT(x[3], Vec{T}(0, 0, 1, 0)),
-                   TDT(x[4], Vec{T}(0, 0, 0, 1)))
+    xdx = SVector{D,TDT}(TDT(x[1], SVector{D,T}(1, 0, 0, 0)),
+                         TDT(x[2], SVector{D,T}(0, 1, 0, 0)),
+                         TDT(x[3], SVector{D,T}(0, 0, 1, 0)),
+                         TDT(x[4], SVector{D,T}(0, 0, 0, 1)))
     gdg = metric(xdx)
-    g = smat(T, (a,b) -> gdg[a,b].val)
-    dg = sten3(T, (a,b,c) -> gdg[a,b].eps[c])
-    (g, dg)
+    g = @SMatrix T[gdg[a,b].val for a in 1:D, b in 1:D]
+    dg = @SArray T[gdg[a,b].eps[c] for a in 1:D, b in 1:D, c in 1:D]
+    g, dg
 end
 
 
@@ -361,11 +309,16 @@ export christoffel
 """
 Christoffel symbol Γ^a_bc
 """
-function christoffel(metric::Metric, x::Vec{T})::Ten3{T} where {Metric, T}
+function christoffel(metric::Metric, x::SVector{D,T}) where {Metric, T}
     g,dg = dmetric(metric, x)
     gu = inv(g)
-    Γl = sten3(T, (a,b,c) -> (dg[a,b,c] + dg[a,c,b] - dg[b,c,a]) / 2)
-    sten3(T, (a,b,c) -> ssum(T, x -> gu[a,x] * Γl[x,b,c]))
+    Γl = @SArray T[(dg[a,b,c] + dg[a,c,b] - dg[b,c,a]) / 2
+                   for a in 1:D, b in 1:D, c in 1:D]
+    @SArray T[gu[a,1] * Γl[1,b,c] +
+              gu[a,2] * Γl[2,b,c] +
+              gu[a,3] * Γl[3,b,c] +
+              gu[a,4] * Γl[4,b,c]
+              for a in 1:D, b in 1:D, c in 1:D]
 end
 
 
@@ -375,8 +328,8 @@ export Ray
 State of a ray: position x, velocity u
 """
 struct Ray{T}
-    x::Vec{T}
-    u::Vec{T}
+    x::SVector{D,T}
+    u::SVector{D,T}
 end
 
 export r2s, s2r
@@ -396,7 +349,9 @@ RHS of geodesic equation for ray p
 function geodesic(r::Ray{T}, metric::Metric, λ::T)::Ray{T} where {Metric, T}
     Γ = christoffel(metric, r.x)
     xdot = r.u
-    udot = svec(T, a -> - ssum2(T, (x,y) -> Γ[a,x,y] * r.u[x] * r.u[y]))
+    udot = @SVector T[- sum(@SMatrix T[Γ[a,x,y] * r.u[x] * r.u[y]
+                                       for x in 1:D, y in 1:D])
+                      for a in 1:D]
     Ray{T}(xdot, udot)
 end
 
@@ -417,10 +372,10 @@ The distance does not need to be the geodesic distance; any distance
 measure is fine, as long as it is zero on the surface, positive
 outside, and negative inside.
 """
-function distance(obj::Object, pos::Vec)
+function distance(obj::Object, pos::SVector{D,T})::T where{T}
     @error "Called distance on abstract object"
 end
-function objcolor(obj::Object, pos::Vec)
+function objcolor(obj::Object, pos::SVector{D,T})::SVector{3,T} where {T}
     @error "Called color on abstract object"
 end
 
@@ -432,10 +387,10 @@ struct Plane{T} <: Object{T}
     time::T
 end
 
-function distance(pl::Plane{T}, pos::Vec{T})::T where{T}
+function distance(pl::Plane{T}, pos::SVector{D,T})::T where{T}
     pos[1] - pl.time
 end
-function objcolor(pl::Plane{T}, pos::Vec{T})::SVector{3,T} where{T}
+function objcolor(pl::Plane{T}, pos::SVector{D,T})::SVector{3,T} where{T}
     SVector{3,T}(0, T(1)/2, 0)
 end
 
@@ -443,17 +398,17 @@ end
 
 export Sphere
 struct Sphere{T} <: Object{T}
-    pos::Vec{T}
-    vel::Vec{T}
+    pos::SVector{D,T}
+    vel::SVector{D,T}
     radius::T
 end
 
-function distance(sph::Sphere{T}, pos::Vec{T})::T where{T}
+function distance(sph::Sphere{T}, pos::SVector{D,T})::T where{T}
     # TODO: Use metric?
     sign(sph.radius) *
-        (ssum(T, a -> (pos[a] - sph.pos[a])^2, 2:D) - sph.radius^2)
+        (sum(@SVector T[(pos[a] - sph.pos[a])^2 for a in 2:D]) - sph.radius^2)
 end
-function objcolor(sph::Sphere{T}, pos::Vec{T})::SVector{3,T} where{T}
+function objcolor(sph::Sphere{T}, pos::SVector{D,T})::SVector{3,T} where{T}
     x = pos[2] - sph.pos[2]
     y = pos[3] - sph.pos[3]
     z = pos[4] - sph.pos[4]
@@ -465,116 +420,110 @@ end
 
 
 
+export min_distance
+function min_distance(objs::Vector{Object{T}}, s::SVector{2D,T})::T where {T}
+    r = s2r(s)
+    dmin = T(Inf)
+    for obj in objs
+        d = distance(obj, r.x)::T
+        dmin = min(dmin, d)
+    end
+    dmin
+end
+
+
+
 export Pixel
 struct Pixel{T}
-    pos::Vec{T}                 # x^a
-    normal::Vec{T}              # n^a, past null normal to pixel surface
+    pos::SVector{D,T}         # x^a
+    normal::SVector{D,T}      # n^a, past null normal to pixel surface
     rgb::SVector{3,T}
 end
-
-export trace_ray
-function trace_ray(metric, objs::Vector{Object{T}},
-                   p::Pixel{T})::Pixel{T} where {T}
-    tol = eps(T)^(T(3)/4)
-
-    x,u = p.pos,p.normal
-    g = metric(x)
-    u2 = u' * g * u
-    @assert abs(u2) <= tol
-
-    λ0 = T(0)
-    λ1 = T(100)
-    r = Ray{T}(x, u)
-    prob = ODEProblem(geodesic, r2s(r), (λ0, λ1), metric)
-    function condition(s::SVector{2D,T}, λ, integrator)
-        r = s2r(s)::Ray{T}
-        dmin = T(Inf)
-        for obj in objs
-            d = distance(obj, r.x)::T
-            dmin = min(dmin, d)
-        end
-        dmin
-    end
-    function affect!(integrator)
-        terminate!(integrator)
-    end
-    cb = ContinuousCallback(condition, affect!)
-    sol = solve(prob, Tsit5(), callback=cb, reltol=tol, abstol=tol)
-    λend = sol.t[end]
-    rend = s2r(sol(λend))
-    x,u = rend.x,rend.u
-
-    # g = metric(x)
-    # u2 = u' * g * u
-    # rgb = @view rend.x[2:4]
-    # Pixel{T}(p.pos, p.normal, rgb)
-
-    imin = 0
-    dmin = T(0.01)
-    for (i,obj) in enumerate(objs)
-        d = distance(obj, x)
-        if d < dmin
-            imin = i
-            dmin = d
-        end
-    end
-    if imin == 0
-        col = SVector{3,T}(1, 0, 0) # did not hit any object
-    else
-        col = objcolor(objs[imin], x) .* (T(imin) / length(objs))
-    end
-    Pixel{T}(p.pos, p.normal, col)
-end
-
-
 
 export Canvas
 struct Canvas{T}
     pixels::Array{Pixel{T}, 2}
 end
 
+export make_canvas
+function make_canvas(metric::Metric,
+                     pos::SVector{D,T},
+                     widthx::SVector{D,T}, widthy::SVector{D,T},
+                     normal::SVector{D,T},
+                     ni::Int, nj::Int) where {Metric, D, T}
+    pixels = Array{Pixel{T}}(undef, ni, nj)
+    for j in 1:nj, i in 1:ni
+        dx = (i-T(1)/2) / ni - T(1)/2
+        dy = (j-T(1)/2) / nj - T(1)/2
+        x = pos + dx * widthx + dy * widthy
+        n = normal + dx * widthx + dy * widthy
+        g = metric(x)
+        gu = inv(g)
+        t = gu * SVector{D,T}(1, 0, 0, 0)
+        t2 = t' * g * t
+        n2 = n' * g * n
+        u = (t / sqrt(-t2) + n / sqrt(n2)) / sqrt(T(2))
+        pixels[i,j] = Pixel{T}(x, u, zeros(SVector{3,T}))
+    end
+    Canvas{T}(pixels)
+end
+
+
+
 export trace_rays
 function trace_rays(metric, objs::Vector{Object{T}},
                     c::Canvas{T})::Canvas{T} where {T}
+    tol = eps(T)^(T(3)/4)
     l = length(c.pixels)
 
-    # Serial
-    # c = Canvas{T}(Pixel{T}[
-    #     (
-    # print("\r$(round(Int, 100*(i-1)/l))%");
-    # trace_ray(metric, objs, p)
-    # )
-    #     for (i,p) in enumerate(c.pixels)])
-    # println("\r100%")
+    condition(s, λ, integrator) = min_distance(objs, s)
+    affect!(integrator) = terminate!(integrator)
+    cb = ContinuousCallback(condition, affect!)
 
-    # Distributed
-    # ps = SharedArray{Pixel{T}}(l)
-    # @sync @distributed for i in 1:l
-    #     ps[i] = trace_ray(metric, objs, c.pixels[i])
-    # end
-    # c = Canvas{T}(Array{Pixel{T}, 2}(undef, size(c.pixels)))
-    # for i in 1:l
-    #     c.pixels[i] = ps[i]
-    # end
-
-    # Multi-threaded per pixel
-    # ps = Array{Pixel{T}, 2}(undef, size(c.pixels))
-    # Threads.@threads for i in 1:l
-    #     ps[i] = trace_ray(metric, objs, c.pixels[i])
-    # end
-    # c = Canvas{T}(ps)
-
-    # Multi-threaded per scanline
-    ni,nj = size(c.pixels)
-    ps = Array{Pixel{T}, 2}(undef, ni, nj)
-    Threads.@threads for j in 1:nj
-        for i in 1:ni
-            ps[i,j] = trace_ray(metric, objs, c.pixels[i,j])
-        end
+    function input_func(i::Int)
+        p = c.pixels[i]
+        x,u = p.pos,p.normal
+        r2s(Ray{T}(x, u))
     end
-    c = Canvas{T}(ps)
+    λ0,λ1 = T(0),T(100)
+    prob = ODEProblem(geodesic, input_func(1), (λ0, λ1), metric)
+    function prob_func(prob,i,repeat)
+        ODEProblem(geodesic, input_func(i), (λ0, λ1), metric)
+    end
+    function output_func(sol,i)
+        λend = sol.t[end]
+        s2r(sol[end]), false
+    end
 
-    c
+    probs = EnsembleProblem(prob,
+                            prob_func=prob_func,
+                            output_func=output_func)
+    sols = solve(probs, Tsit5(), callback=cb, trajectories=length(c.pixels),
+                 reltol=tol, abstol=tol)
+
+    pixels = Array{Pixel{T}}(undef, size(c.pixels))
+    for i in 1:length(pixels)
+        p = c.pixels[i]
+        r = sols.u[i]
+        x,u = r.x,r.u
+        omin = 0
+        dmin = T(0.01)
+        for (o,obj) in enumerate(objs)
+            d = distance(obj, x)
+            if d < dmin
+                omin = o
+                dmin = d
+            end
+        end
+        if omin == 0
+            col = SVector{3,T}(1, 0, 0) # did not hit any object
+        else
+            col = objcolor(objs[omin], x) .* (T(omin) / length(objs))
+        end
+        pixels[i] = Pixel{T}(p.pos, p.normal, col)
+    end
+
+    Canvas{T}(pixels)
 end
 
 
@@ -585,31 +534,19 @@ function example1()
     T = Float64
 
     metric = minkowski
-    caelum = Sphere{T}(Vec{T}(0, 0, 0, 0), Vec{T}(1, 0, 0, 0), -10)
+    caelum = Sphere{T}(SVector{D,T}(0, 0, 0, 0), SVector{D,T}(1, 0, 0, 0), -10)
     frustum = Plane{T}(-20)
-    sphere = Sphere{T}(Vec{T}(0, 0, 0, 0), Vec{T}(1, 0, 0, 0), T(1)/2)
+    sphere = Sphere{T}(SVector{D,T}(0, 0, 0, 0), SVector{D,T}(1, 0, 0, 0),
+                       T(1)/2)
     objs = Object{T}[caelum, frustum, sphere]
 
     ni = 200
     nj = 200
-    pos = Vec{T}(0, 0, -2, 0)
-    widthx = Vec{T}(0, 1, 0, 0)
-    widthy = Vec{T}(0, 0, 0, 1)
-    normal = Vec{T}(0, 0, 1, 0)
-    function make_pixel(i, j)
-        dx = (i-1/2) / ni - 1/2
-        dy = (j-1/2) / nj - 1/2
-        x = pos + dx * widthx + dy * widthy
-        n = normal + dx * widthx + dy * widthy
-        g = metric(x)
-        gu = inv(g)
-        t = gu * Vec{T}(1, 0, 0, 0)
-        t2 = t' * g * t
-        n2 = n' * g * n
-        u = (t / sqrt(-t2) + n / sqrt(n2)) / sqrt(T(2))
-        Pixel{T}(x, u, zeros(SVector{3,T}))
-    end
-    canvas = Canvas{T}(Pixel{T}[make_pixel(i,j) for i in 1:ni, j in 1:nj])
+    pos = SVector{D,T}(0, 0, -2, 0)
+    widthx = SVector{D,T}(0, 1, 0, 0)
+    widthy = SVector{D,T}(0, 0, 0, 1)
+    normal = SVector{D,T}(0, 0, 1, 0)
+    canvas = make_canvas(metric, pos, widthx, widthy, normal, ni, nj)
 
     canvas = trace_rays(metric, objs, canvas)
 
@@ -627,38 +564,25 @@ function example1()
     rm(file, force=true)
     println("Output file is \"$file\"")
     save(file, scene)
-    nothing
 end
 
 function example2()
     T = Float64
 
     metric = kerr_schild
-    caelum = Sphere{T}(Vec{T}(0, 0, 0, 0), Vec{T}(1, 0, 0, 0), -10)
+    caelum = Sphere{T}(SVector{D,T}(0, 0, 0, 0), SVector{D,T}(1, 0, 0, 0), -10)
     frustum = Plane{T}(-20)
-    sphere = Sphere{T}(Vec{T}(0, 4, 0, 0), Vec{T}(1, 0, 0, 0), T(1)/2)
+    sphere = Sphere{T}(SVector{D,T}(0, 4, 0, 0), SVector{D,T}(1, 0, 0, 0),
+                       T(1)/2)
     objs = Object{T}[caelum, frustum, sphere]
 
     ni = 200
     nj = 200
-    pos = Vec{T}(0, 4, -2, 0)
-    widthx = Vec{T}(0, 1, 0, 0)
-    widthy = Vec{T}(0, 0, 0, 1)
-    normal = Vec{T}(0, 0, 1, 0)
-    function make_pixel(i, j)
-        dx = (i-1/2) / ni - 1/2
-        dy = (j-1/2) / nj - 1/2
-        x = pos + dx * widthx + dy * widthy
-        n = normal + dx * widthx + dy * widthy
-        g = metric(x)
-        gu = inv(g)
-        t = gu * Vec{T}(1, 0, 0, 0)
-        t2 = t' * g * t
-        n2 = n' * g * n
-        u = (t / sqrt(-t2) + n / sqrt(n2)) / sqrt(T(2))
-        Pixel{T}(x, u, zeros(SVector{3,T}))
-    end
-    canvas = Canvas{T}(Pixel{T}[make_pixel(i,j) for i in 1:ni, j in 1:nj])
+    pos = SVector{D,T}(0, 4, -2, 0)
+    widthx = SVector{D,T}(0, 1, 0, 0)
+    widthy = SVector{D,T}(0, 0, 0, 1)
+    normal = SVector{D,T}(0, 0, 1, 0)
+    canvas = make_canvas(metric, pos, widthx, widthy, normal, ni, nj)
 
     canvas = trace_rays(metric, objs, canvas)
 
@@ -676,7 +600,6 @@ function example2()
     rm(file, force=true)
     println("Output file is \"$file\"")
     save(file, scene)
-    nothing
 end
 
 end
