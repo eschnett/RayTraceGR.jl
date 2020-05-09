@@ -8,8 +8,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        version: ["1.0", "1.4", "1.5", "nightly"]
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        #TODO version: ["1.0", "1.4", "1.5", "nightly"]
+        #TODO os: [ubuntu-latest, windows-latest, macOS-latest]
+        version: ["1.4"]
+        os: [ubuntu-latest]
         # <<#HAS_EXCLUDES>>
         # exclude:
         # <</HAS_EXCLUDES>>
