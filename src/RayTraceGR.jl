@@ -13,10 +13,10 @@ struct Dual{T,DT} <: Real
     eps::DT
 end
 
-function Dual{T,DT}(val::T) where {T,DT}
+@inline function Dual{T,DT}(val::T) where {T,DT}
     Dual{T,DT}(val, zeros(DT))
 end
-function Dual{T,DT}(val) where {T,DT}
+@inline function Dual{T,DT}(val) where {T,DT}
     Dual{T,DT}(val, zeros(DT))
 end
 
@@ -28,118 +28,126 @@ Base.promote_rule(::Type{Dual{T,DT}}, ::Type{Dual{U,DU}}) where {T,DT,U,DU} =
 
 # Cannot have a return type annotation here, as this would lead to an
 # infinite recursion
-function Base.convert(::Type{Dual{T,DT}}, x::Dual{U,DU}) where {T,DT,U,DU}
+@inline function Base.convert(::Type{Dual{T,DT}}, x::Dual{U,DU}
+                              ) where {T,DT,U,DU}
     Dual{T,DT}(convert(T, x.val), convert(DT, x.eps))
 end
-function Base.convert(::Type{Dual{T,DT}}, val::Number)::Dual{T,DT} where {T,DT}
+@inline function Base.convert(::Type{Dual{T,DT}}, val::Number
+                              )::Dual{T,DT} where {T,DT}
     Dual{T,DT}(convert(T, val))
 end
 
-function Base.eps(::Type{Dual{T,DT}})::Dual{T,DT} where {T,DT}
+@inline function Base.eps(::Type{Dual{T,DT}})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(eps(T))
 end
 
-function Base.zero(::Type{Dual{T,DT}})::Dual{T,DT} where {T,DT}
+@inline function Base.zero(::Type{Dual{T,DT}})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(zero(T))
 end
-function Base.one(::Type{Dual{T,DT}})::Dual{T,DT} where {T,DT}
+@inline function Base.one(::Type{Dual{T,DT}})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(one(T))
 end
 
-function Base.:+(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:+(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(+x.val, +x.eps)
 end
 
-function Base.:-(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:-(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(-x.val, -x.eps)
 end
 
-function Base.:+(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:+(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val+y.val, x.eps+y.eps)
 end
-function Base.:+(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
+@inline function Base.:+(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val+ a, x.eps)
 end
-function Base.:+(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:+(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a+x.val, x.eps)
 end
-function Base.:+(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
+@inline function Base.:+(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val+a, x.eps)
 end
-function Base.:+(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:+(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a+x.val, x.eps)
 end
 
-function Base.:-(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:-(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val-y.val, x.eps-y.eps)
 end
-function Base.:-(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
+@inline function Base.:-(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val- a, x.eps)
 end
-function Base.:-(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:-(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a-x.val, x.eps)
 end
-function Base.:-(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
+@inline function Base.:-(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val-a, x.eps)
 end
-function Base.:-(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:-(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a-x.val, x.eps)
 end
 
-function Base.:*(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:*(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val*y.val, x.eps.*y.val + x.val.*y.eps)
 end
-function Base.:*(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
+@inline function Base.:*(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val*a, x.eps.*a)
 end
-function Base.:*(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:*(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a*x.val, a.*x.eps)
 end
-function Base.:*(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
+@inline function Base.:*(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val*a, x.eps.*a)
 end
-function Base.:*(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:*(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a*x.val, a.*x.eps)
 end
 
 # 1/(a+ϵb) = (a-ϵb)/a^2
-function Base.inv(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.inv(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(inv(x.val), -inv(x.val)^2 .* x.eps)
 end
 
-function Base.:/(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:/(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val/y.val, (x.eps * y.val - x.val * y.eps) / y.val^2)
 end
-function Base.:/(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
+@inline function Base.:/(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val/a, x.eps./a)
 end
-function Base.:/(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
+@inline function Base.:/(x::Dual{T,DT}, a::Integer)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val/a, x.eps./a)
 end
 
-function Base.:\(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:\(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val\y.val, x.val^2 \ (x.eps .* y.val - x.val .* y.eps))
 end
-function Base.:\(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:\(a::T, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a\x.val, a.\x.eps)
 end
-function Base.:\(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:\(a::Integer, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(a\x.val, a.\x.eps)
 end
 
-function Base.:^(x::Dual{T,DT}, n::Integer)::Dual{T,DT} where {T,DT}
+@inline Base.literal_pow(::typeof(^), x::Dual, ::Val{0}) = one(x)
+@inline Base.literal_pow(::typeof(^), x::Dual, ::Val{1}) = x
+@inline Base.literal_pow(::typeof(^), x::Dual, ::Val{2}) = x*x
+@inline Base.literal_pow(::typeof(^), x::Dual, ::Val{3}) = x*x*x
+@inline Base.literal_pow(::typeof(^), x::Dual, ::Val{4}) = (x^2)^2
+
+@inline function Base.:^(x::Dual{T,DT}, n::Integer)::Dual{T,DT} where {T,DT}
     n == 0 && return one(x)
     Dual{T,DT}(x.val^n, n * x.val^(n-1) .* x.eps)
 end
-function Base.:^(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
+@inline function Base.:^(x::Dual{T,DT}, a::T)::Dual{T,DT} where {T,DT}
     Dual{T,DT}(x.val^a, a * x.val^(a-1) .* x.eps)
 end
-function Base.:^(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.:^(x::Dual{T,DT}, y::Dual{T,DT})::Dual{T,DT} where {T,DT}
     r = x.val ^ y.val
     Dual{T,DT}(r, y.val/x.val * r .* x.eps + r * log(x.val) .* y.eps)
 end
 
-function Base.abs(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.abs(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(abs(x.val), copysign(one(T), x.val) .* x.eps)
 end
 
@@ -154,12 +162,13 @@ end
 function Base.atan(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(atan(x.val), 1 / (1 + x.val^2) .* x.eps)
 end
-function Base.atan(y::Dual{T,DT}, x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+function Base.atan(y::Dual{T,DT}, x::Dual{T,DT}
+                           )::Dual{T,DT} where {T,DT}
     ρ2 = x.val^2 + y.val^2
     Dual{T,DT}(atan(y.val, x.val), x.val .* y.eps - y.val / ρ2 .* x.eps)
 end
 
-function Base.cbrt(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.cbrt(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     r = cbrt(x.val)
     Dual{T,DT}(r, r/(3*x.val) .* x.eps)
 end
@@ -181,57 +190,57 @@ function Base.sin(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     Dual{T,DT}(sin(x.val), cos(x.val) .* x.eps)
 end
 
-function Base.sqrt(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
+@inline function Base.sqrt(x::Dual{T,DT})::Dual{T,DT} where {T,DT}
     r = sqrt(x.val)
     Dual{T,DT}(r, 1/(2*r) .* x.eps)
 end
 
-function Base.:(==)(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.:(==)(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
     x.val == y.val
 end
-function Base.:(==)(x::Dual{T,DT}, a::T)::Bool where {T,DT}
+@inline function Base.:(==)(x::Dual{T,DT}, a::T)::Bool where {T,DT}
     x.val == a
 end
-function Base.:(==)(x::Dual{T,DT}, a::Integer)::Bool where {T,DT}
+@inline function Base.:(==)(x::Dual{T,DT}, a::Integer)::Bool where {T,DT}
     x.val == a
 end
-function Base.:(==)(a::T, x::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.:(==)(a::T, x::Dual{T,DT})::Bool where {T,DT}
     a == x.val
 end
-function Base.:(==)(a::Integer, x::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.:(==)(a::Integer, x::Dual{T,DT})::Bool where {T,DT}
     a == x.val
 end
 
-function Base.:(<)(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.:(<)(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
     x.val < y.val
 end
-function Base.:(<)(x::Dual{T,DT}, a::T)::Bool where {T,DT}
+@inline function Base.:(<)(x::Dual{T,DT}, a::T)::Bool where {T,DT}
     x.val < a
 end
-function Base.:(<)(x::Dual{T,DT}, a::Integer)::Bool where {T,DT}
+@inline function Base.:(<)(x::Dual{T,DT}, a::Integer)::Bool where {T,DT}
     x.val < a
 end
-function Base.:(<)(a::T, x::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.:(<)(a::T, x::Dual{T,DT})::Bool where {T,DT}
     a < x.val
 end
-function Base.:(<)(a::Integer, x::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.:(<)(a::Integer, x::Dual{T,DT})::Bool where {T,DT}
     a < x.val
 end
 
-function Base.isinf(x::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.isinf(x::Dual{T,DT})::Bool where {T,DT}
     isinf(x.val)
 end
-function Base.isnan(x::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.isnan(x::Dual{T,DT})::Bool where {T,DT}
     isnan(x.val) || any(isnan.(x.eps))
 end
 
-function Base.hash(x::Dual{T,DT}, h::UInt)::UInt where {T,DT}
+@inline function Base.hash(x::Dual{T,DT}, h::UInt)::UInt where {T,DT}
     hash(0xdccda268, hash(x.val, hash(x.eps, h)))
 end
-function Base.isequal(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.isequal(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
     isequal(x.val, y.val) && isequal(x.eps, y.eps)
 end
-function Base.isless(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
+@inline function Base.isless(x::Dual{T,DT}, y::Dual{T,DT})::Bool where {T,DT}
     isless(x.val, y.val) && return true
     isless(y.val, x.val) && return false
     isless(x.eps, y.eps)
