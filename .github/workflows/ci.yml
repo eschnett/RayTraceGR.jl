@@ -12,7 +12,7 @@ jobs:
         #TODO os: [ubuntu-latest, windows-latest, macOS-latest]
         os: [ubuntu-latest]
         #TODO julia-arch: [x64, x86]
-        arch: [x64]
+        julia-arch: [x64]
         # <<#HAS_EXCLUDES>>
         # exclude:
         # <</HAS_EXCLUDES>>
@@ -28,6 +28,6 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
+          arch: ${{ matrix.julia-arch }}
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
