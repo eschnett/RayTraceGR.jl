@@ -1,5 +1,7 @@
 # RayTraceGR.jl
 
+[![GitHub CI](https://github.com/eschnett/RayTraceGR.jl/workflows/CI/badge.svg)](https://github.com/eschnett/RayTraceGR.jl/actions)
+
 ![ray-traced Euclidean sphere](sphere.png "Euclidean Sphere")
 ![ray-traced relativistic sphere](sphere2.png "Relativistic Sphere")
 
