@@ -8,10 +8,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        #TODO version: ["1.0", "1.4", "1.5", "nightly"]
+        version: ["1.0", "1.4", "1.5", "nightly"]
         #TODO os: [ubuntu-latest, windows-latest, macOS-latest]
-        version: ["1.4"]
         os: [ubuntu-latest]
+        #TODO julia-arch: [x64, x86]
+        julia-arch: [x64]
         # <<#HAS_EXCLUDES>>
         # exclude:
         # <</HAS_EXCLUDES>>
@@ -27,6 +28,6 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
-          # arch: ${{ matrix.arch }}
+          arch: ${{ matrix.arch }}
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
