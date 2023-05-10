@@ -281,7 +281,7 @@ function kerr_schild(xx::SVector{D,T})::SMatrix{D,D,T} where {T}
     # <https://en.wikipedia.org/wiki/Kerr_metric>
     η = @SMatrix T[a==b ? (a==1 ? -1 : 1) : 0 for a in 1:D, b in 1:D]
     ρ = sqrt(x^2 + y^2 + z^2)
-    r = sqrt(ρ^2 - a^2)/2 + sqrt(a^2*z^2 + ((ρ^2 - a^2)/2)^2)
+    r = sqrt((ρ^2 - a^2)/2 + sqrt(a^2*z^2 + ((ρ^2 - a^2)/2)^2))
     f = 2*M*r^3 / (r^4 + a^2*z^2)
     k = SVector{D,T}(1,
                      (r*x + a*y) / (r^2 + a^2),
